@@ -69,44 +69,39 @@ def check_for_win_horizontal(matrix, symbol):
                             print(game.active_player.name + MSG_HAS_WON)
                             game_won = True
                             break
-                        elif (
-                                symbol == player1.token_symbol                  # opponent's symbol
-                                and matrix[i][j + 3] == ' '                     # and fourth field to the RIGHT empty
-                                and (                                           # and either:
-                                        i == FIELD_HEIGHT - 1                   # it's on the bottom row
-                                    or (                                        # or:
-                                            i < FIELD_HEIGHT - 1
-                                            and matrix[i + 1][j + 3] != ' '     # field beneath fourth not empty
-                                    )
-                                )
-                        ):
+                        elif check_for_3_horizontal_right(matrix, i, j, symbol):
                             checkmate_col.append(j + 3)
-                            if (
-                                    symbol == player1.token_symbol                  # opponent's symbol
-                                    and matrix[i][j - 1] == ' '                     # and field LEFT to 3 is empty
-                                    and (                                           # and either:
-                                            i == FIELD_HEIGHT - 1                   # it's on the bottom row
-                                        or (                                        # or:
-                                            i < FIELD_HEIGHT - 1
-                                            and matrix[i + 1][j - 1] != ' '         # and field beneath LEFT to 3 not empty
-                                        )
-                                    )
-                            ):
+                            if check_for_3_horizontal_left(matrix, i, j, symbol):
                                 checkmate_col.append(j - 1)
-                        elif (
-                                symbol == player1.token_symbol                  # opponent's symbol
-                                and matrix[i][j - 1] == ' '                     # and field LEFT to 3 is empty
-                                and (                                           # and either:
-                                        i == FIELD_HEIGHT - 1                   # it's on the bottom row
-                                    or (                                        # or:
-                                            i < FIELD_HEIGHT - 1
-                                            and matrix[i + 1][j - 1] != ' '     # and field beneath LEFT to 3 not empty
-                                    )
-                                )
-                        ):
+                        elif check_for_3_horizontal_left(matrix, i, j, symbol):
                             checkmate_col.append(j - 1)
 
+def check_for_3_horizontal_right(matrix, i, j, symbol):
+    return (
+        symbol == player1.token_symbol                  # opponent's symbol
+        and matrix[i][j + 3] == ' '                     # and fourth field to the RIGHT empty
+        and (                                           # and either:
+            i == FIELD_HEIGHT - 1                       # it's on the bottom row
+            or (                                        # or:
+                    i < FIELD_HEIGHT - 1
+                    and matrix[i + 1][j + 3] != ' '     # field beneath fourth not empty
+            )
+        )
+    );
 
+def check_for_3_horizontal_left(matrix, i, j, symbol):
+    return (
+        symbol == player1.token_symbol                  # opponent's symbol
+        and matrix[i][j - 1] == ' '                     # and field LEFT to 3 is empty
+        and (                                           # and either:
+            i == FIELD_HEIGHT - 1                       # it's on the bottom row
+            or (                                        # or:
+                i < FIELD_HEIGHT - 1
+                and matrix[i + 1][j - 1] != ' '         # and field beneath LEFT to 3 not empty
+            )
+        )
+    );
+ 
 def check_for_win_vertical(matrix, symbol):
     global game_won
     global checkmate_col
@@ -119,11 +114,14 @@ def check_for_win_vertical(matrix, symbol):
                             print(game.active_player.name + MSG_HAS_WON)
                             game_won = True
                             break
-                        elif (
-                                symbol == player1.token_symbol
-                                and matrix[i - 3][j] == ' '
-                            ):
+                        elif check_for_vertical_3(matrix, i, j, symbol):
                             checkmate_col.append(j)
+
+def check_for_vertical_3(matrix, i, j, symbol):
+    return (
+        symbol == player1.token_symbol
+        and matrix[i - 3][j] == ' '
+    );
 
 def check_for_win_diagonal_nw_to_se(matrix, symbol):
     global game_won
