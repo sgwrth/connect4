@@ -70,15 +70,15 @@ def check_for_win_horizontal(matrix, symbol):
                             game_won = True
                             break
                         elif (
-                                    symbol == player1.token_symbol                  # opponent's symbol
-                                    and matrix[i][j + 3] == ' '                     # and fourth field to the RIGHT empty
-                                    and (                                           # and either:
-                                            i == FIELD_HEIGHT - 1                   # it's on the bottom row
-                                        or (                                        # or:
-                                                matrix[i - 1] != None               # row below exists
-                                                and matrix[i - 1][j + 3] != ' '     # and field beneath fourth not empty
-                                        )
+                                symbol == player1.token_symbol                  # opponent's symbol
+                                and matrix[i][j + 3] == ' '                     # and fourth field to the RIGHT empty
+                                and (                                           # and either:
+                                        i == FIELD_HEIGHT - 1                   # it's on the bottom row
+                                    or (                                        # or:
+                                            i < FIELD_HEIGHT - 1
+                                            and matrix[i + 1][j + 3] != ' '     # field beneath fourth not empty
                                     )
+                                )
                         ):
                             checkmate_col.append(j + 3)
                             if (
@@ -87,8 +87,8 @@ def check_for_win_horizontal(matrix, symbol):
                                     and (                                           # and either:
                                             i == FIELD_HEIGHT - 1                   # it's on the bottom row
                                         or (                                        # or:
-                                            matrix[i - 1] != None               # row below exists
-                                            and matrix[i - 1][j - 1] != ' '     # and field beneath LEFT to 3 not empty
+                                            i < FIELD_HEIGHT - 1
+                                            and matrix[i + 1][j - 1] != ' '         # and field beneath LEFT to 3 not empty
                                         )
                                     )
                             ):
@@ -99,8 +99,8 @@ def check_for_win_horizontal(matrix, symbol):
                                 and (                                           # and either:
                                         i == FIELD_HEIGHT - 1                   # it's on the bottom row
                                     or (                                        # or:
-                                            matrix[i - 1] != None               # row below exists
-                                            and matrix[i - 1][j - 1] != ' '     # and field beneath LEFT to 3 not empty
+                                            i < FIELD_HEIGHT - 1
+                                            and matrix[i + 1][j - 1] != ' '     # and field beneath LEFT to 3 not empty
                                     )
                                 )
                         ):
@@ -204,7 +204,7 @@ def reset_checkmate_col():
     global checkmate_col
     for i in range(len(checkmate_col)):
         print("[removing: ", col + 1, "]")
-        checkmate_col.pop(i)
+        checkmate_col.pop(0)
 
 # wipe_screen()
 print_matrix(field)
