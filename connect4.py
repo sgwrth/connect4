@@ -137,15 +137,43 @@ def check_for_win_diagonal_nw_to_se(matrix, symbol):
 
 def check_for_win_diagonal_sw_to_ne(matrix, symbol):
     global game_won
-    for i in range((FIELD_HEIGHT - 1), 2, -1):
-        for j in range(4):
+    global checkmate_col
+    for i in range((FIELD_HEIGHT - 1), 3, -1):
+        for j in range(5):
             if matrix[i][j] == symbol:
                 if matrix[i - 1][j + 1] == symbol:
                     if matrix[i - 2][j + 2] == symbol:
-                        if matrix[i - 3][j + 3] == symbol:
-                            print(game.active_player.name + MSG_HAS_WON)
-                            game_won = True
-                            break
+
+                        if j < 4 and i > 2:
+                            if matrix[i - 3][j + 3] == symbol:
+                                print(game.active_player.name + MSG_HAS_WON)
+                                game_won = True
+                                break
+                            elif (
+                                    # ne check
+                                    matrix[i - 3][j + 3] == ' '
+                                    and matrix[i - 2][j + 3] != ' '
+                            ):
+                                checkmate_col.append(j + 3)
+
+                        if (
+                                # se check
+                                (
+                                    i < (FIELD_HEIGHT - 1)
+                                    and j > 0
+                                )
+                                and
+                                (
+                                    matrix[i + 1][j - 1] == ' '
+                                    and 
+                                            (
+                                                i == (FIELD_HEIGHT - 2)
+                                                or matrix[i + 2][j - 1] != ' '
+                                            )
+                                )
+                        ):
+                            checkmate_col.append(j - 1)
+
 
 def check_for_win(matrix, symbol):
     check_for_win_horizontal(matrix, symbol)
@@ -200,9 +228,9 @@ def prompt_player_for_move(active_player):
 
 def reset_checkmate_col():
     global checkmate_col
-    for i in range(len(checkmate_col)):
-        print("[removing: ", col + 1, "]")
-        checkmate_col.pop(0)
+    for i in range((len(checkmate_col) - 1), -1, -1):
+        print("[removing: ", checkmate_col[i] + 1, "]")
+        checkmate_col.pop(i)
 
 # wipe_screen()
 print_matrix(field)
