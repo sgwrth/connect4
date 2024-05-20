@@ -6,6 +6,7 @@ FIELD_WIDTH = 7
 FIELD_HEIGHT = 6
 UNDERLINE_LENGTH = 21
 BOT_LEVEL = 0.04
+MIDDLE_COL = FIELD_WIDTH // 2
 
 PLAYER_1_SYMBOL = "X"
 PLAYER_2_SYMBOL = "O"
@@ -27,12 +28,12 @@ class Game_Mode(enum.IntEnum):
     TWO_PLAYERS = 2
 
 class Game:
-    def __init__(self, active_player, game_won, first_move, checkmate_cols):
+    def __init__(self, active_player):
         self.active_player = active_player
-        self.game_won = game_won
-        self.first_move = first_move
-        self.checkmate_cols = checkmate_cols
-        self.tokens_in_cols = [0, 0, 0, 0, 0 ,0 ,0]
+        self.game_won = False
+        self.first_move = True
+        self.checkmate_cols = -1
+        self.tokens_in_cols = [0, 0, 0, 0, 0, 0 ,0]
 
 class Player:
     def __init__(self, name, token_symbol):
@@ -214,8 +215,8 @@ def toggle_active_player():
 
 def place_token(matrix, column, game):
     for i in range((FIELD_HEIGHT - 1), -1, -1):
-        if matrix[i][selected_column] == ' ':
-            matrix[i][selected_column] = game.active_player.token_symbol
+        if matrix[i][column] == ' ':
+            matrix[i][column] = game.active_player.token_symbol
             break
 
 def get_column_from_player(active_player):
@@ -266,6 +267,25 @@ def select_col_for_bot(checkmate_cols):
         selected_column = get_random_column_no()
     return selected_column
 
+def get_random_column_no():
+    return random.randint(0, (FIELD_WIDTH - 1))
+
+def first_move_col(matrix):
+    if matrix[(FIELD_HEIGHT - 1)][MIDDLE_COL] == ' ':
+        return MIDDLE_COL
+    else:
+        if random.randint(0, 1) == 0:
+            return MIDDLE_COL - 1
+        else:
+            return MIDDLE_COL + 1
+
+def bot_make_move(matrix, game, checkmate_cols):
+    if game.first_move:
+        place_token(matrix, first_move_col(matrix), game)
+        game.first_move = False
+    else:
+        place_token(matrix, select_col_for_bot(checkmate_cols), game)
+
 wipe_screen()
 
 print(MSG_LETS_PLAY_CONNECT4 + "\n")
@@ -287,16 +307,13 @@ while game_mode != Game_Mode.VS_BOT and game_mode != Game_Mode.TWO_PLAYERS:
     except:
         print("[wrong input]")
 
-def get_random_column_no():
-    return random.randint(0, (FIELD_WIDTH - 1))
-
 if game_mode == Game_Mode.TWO_PLAYERS:
     print(MSG_PROMPT_PLAYER_2_FOR_NAME)
     print(MSG_ENTER_NAME, end = '')
     name = input()
     player2 = Player(name, PLAYER_2_SYMBOL)
     print(MSG_WELCOME + player2.name + MSG_GOOD_LUCK + "\n")
-    game = Game(player1, False, True, -1)
+    game = Game(player1)
     while game_won != True:
         wipe_screen()
         prompt_player_for_move(game.active_player)
@@ -309,7 +326,7 @@ if game_mode == Game_Mode.TWO_PLAYERS:
 elif game_mode == Game_Mode.VS_BOT:
     random.seed()
     player2 = Player(BOT_NAME, PLAYER_2_SYMBOL)
-    game = Game(player1, False, True, -1)
+    game = Game(player1)
     print(f"You will play against Bot (v{BOT_LEVEL})!  Press ENTER to continue.")
     input()
     while game_won != True:
@@ -323,8 +340,7 @@ elif game_mode == Game_Mode.VS_BOT:
         toggle_active_player()
         wipe_screen()
         print_bots_turn_msg(checkmate_cols)
-        selected_column = select_col_for_bot(checkmate_cols)
-        place_token(field, selected_column, game)
+        bot_make_move(field, game, checkmate_cols)
         print_matrix(field)
         print_footer()
         if 0 == check_for_win_vs_bot(field, game):
