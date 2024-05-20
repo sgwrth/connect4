@@ -21,7 +21,8 @@ MSG_GOOD_LUCK = "!  And good luck!"
 MSG_LETS_PLAY_CONNECT4 = "Let's play Connect 4!"
 MSG_HAS_WON = " has won!"
 MSG_CHOOSE_MODE = "Select game mode (1 = vs. bot, 2 = two players): "
-ERROR_INVALID_COLUMN = "Error! Invalid column number."
+ERROR_INVALID_COLUMN = "Error!  Invalid column number."
+ERROR_COLUMN_FULL = "Error!  Column is full."
 
 class Game_Mode(enum.IntEnum):
     VS_BOT = 1
@@ -207,7 +208,7 @@ def wipe_screen():
     print_matrix(field)
     print_footer()
 
-def toggle_active_player():
+def toggle_active_player(game):
     if game.active_player == player1:
         game.active_player = player2
     else:
@@ -217,25 +218,32 @@ def place_token(matrix, column, game):
     for i in range((FIELD_HEIGHT - 1), -1, -1):
         if matrix[i][column] == ' ':
             matrix[i][column] = game.active_player.token_symbol
+            game.tokens_in_cols[column] += 1
             break
 
 def get_column_from_player(active_player):
     print(active_player.name + MSG_PROMPT_PLAYER_FOR_MOVE, end = '')
-    column_as_string = input()
     try:
-        column_as_int = int(column_as_string) - 1
-        return column_as_int
+        return int(input()) - 1
     except:
         return -1
 
 def prompt_player_for_move(game):
-    global selected_column
     while True:
         selected_column = get_column_from_player(game.active_player)
-        if selected_column > -1 and selected_column < FIELD_WIDTH:
-            break
+        if FIELD_WIDTH > selected_column > -1:
+            if is_col_full(selected_column) == False:
+                return selected_column
+            else:
+                print(ERROR_COLUMN_FULL)
         else:
             print(ERROR_INVALID_COLUMN)
+
+def is_col_full(col):
+    if game.tokens_in_cols[col] < FIELD_HEIGHT:
+        return False
+    else:
+        return True
 
 def reset_checkmate_cols():
     global checkmate_cols
@@ -316,12 +324,12 @@ if game_mode == Game_Mode.TWO_PLAYERS:
     game = Game(player1)
     while game_won != True:
         wipe_screen()
-        prompt_player_for_move(game.active_player)
+        selected_column = prompt_player_for_move(game)
         place_token(field, selected_column, game)
         print_matrix(field)
         print_footer()
         check_for_win(field, game)
-        toggle_active_player()
+        toggle_active_player(game)
     print(MSG_THANKS_FOR_PLAYING)
 elif game_mode == Game_Mode.VS_BOT:
     random.seed()
@@ -331,13 +339,13 @@ elif game_mode == Game_Mode.VS_BOT:
     input()
     while game_won != True:
         wipe_screen()
-        prompt_player_for_move(game)
+        selected_column = prompt_player_for_move(game)
         place_token(field, selected_column, game)
         print_matrix(field)
         print_footer()
         if 1 == check_for_win_vs_bot(field, game):
             break
-        toggle_active_player()
+        toggle_active_player(game)
         wipe_screen()
         print_bots_turn_msg(checkmate_cols)
         bot_make_move(field, game, checkmate_cols)
@@ -345,5 +353,5 @@ elif game_mode == Game_Mode.VS_BOT:
         print_footer()
         if 0 == check_for_win_vs_bot(field, game):
             break
-        toggle_active_player()
+        toggle_active_player(game)
     print(MSG_THANKS_FOR_PLAYING)
