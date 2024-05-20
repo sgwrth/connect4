@@ -271,9 +271,12 @@ def select_col_for_bot(checkmate_cols):
             selected_column = col
             break
         reset_checkmate_cols()
+        return selected_column
     else:
-        selected_column = get_random_column_no()
-    return selected_column
+        while True:
+            selected_column = get_random_column_no()
+            if is_col_full(selected_column) == False:
+                return selected_column
 
 def get_random_column_no():
     return random.randint(0, (FIELD_WIDTH - 1))
