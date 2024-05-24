@@ -41,6 +41,10 @@ class Game_Mode(enum.IntEnum):
     VS_BOT = 1
     TWO_PLAYERS = 2
 
+class Column_Select(enum.IntEnum):
+    QUIT_GAME = -2
+    INVALID_COLUMN = -1
+
 class Game:
     def __init__(self, active_player, game_mode):
         self.active_player = active_player
@@ -196,7 +200,7 @@ def toggle_active_player(game):
         game.active_player = player1
 
 def place_token(matrix, column, game):
-    if 0 != column:
+    if Column_Select.QUIT_GAME != column:
         for i in range(FIELD_HEIGHT - 1, -1, -1):
             if matrix[i][column] == ' ':
                 matrix[i][column] = game.active_player.token_symbol
@@ -208,17 +212,17 @@ def get_column_from_player(active_player):
     print(active_player.name + MSG_PROMPT_PLAYER_FOR_MOVE, end = '')
     user_input = input()
     if user_input == KEY_TO_QUIT:
-        return 0
+        return Column_Select.QUIT_GAME 
     else:
         try:
             return int(user_input) - 1
         except:
-            return -1
+            return Column_Select.INVALID_COLUMN
 
 def prompt_player_for_move(game):
     while True:
         selected_column = get_column_from_player(game.active_player)
-        if 0 == selected_column:
+        if -2 == selected_column:
             game.quit = True
             return selected_column
         if FIELD_WIDTH > selected_column > -1:
