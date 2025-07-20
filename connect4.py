@@ -1,44 +1,12 @@
+import bot
+import constants as const
+import enum
+import errors
+import messages
 import os
 import random
-import enum
-
-FIELD_WIDTH = 7
-FIELD_HEIGHT = 6
-UNDERLINE_LENGTH = 21
-BOT_LEVEL = 0.065
-MIDDLE_COL = FIELD_WIDTH // 2
-MAX_MOVES = FIELD_WIDTH * FIELD_HEIGHT
-
-PLAYER_1_SYMBOL = "X"
-PLAYER_2_SYMBOL = "O"
-BOT_NAME = "Bot"
-KEY_TO_QUIT = "x"
-
-MSG_PROMPT_PLAYER_1_FOR_NAME = "Player 1, what is your name?"
-MSG_PROMPT_PLAYER_2_FOR_NAME = "Player 2, what is your name?"
-MSG_THANKS_FOR_PLAYING = "Thanks for playing!"
-MSG_PROMPT_PLAYER_FOR_MOVE = (
-        ", it's your move!\n"
-        f"Enter the column no. for your token (or {KEY_TO_QUIT} to quit): "
-        )
-MSG_ENTER_NAME = "Enter name: "
-MSG_WELCOME = "Welcome, "
-MSG_GOOD_LUCK = "!  And good luck!"
-MSG_LETS_PLAY_CONNECT4 = "Let's play Connect 4!"
-MSG_HAS_WON = " has won!"
-MSG_CHOOSE_MODE = "Select game mode (1 = vs. bot, 2 = two players): "
-MSG_PRESS_ENTER = "Press ENTER to continue."
-MSG_PLAY_VS_BOT = (
-        f"You will play against Bot (v{BOT_LEVEL})!  {MSG_PRESS_ENTER}"
-        )
-MSG_TIE_GAME = "Wow! It's a tie game!"
-MSG_BOT_TURN = "It's Bot's turn now!"
-MSG_MATCHPOINTS_IN = "Matchpoint(s) in "
-MSG_WILL_IT_NOTICE = "\nWill it notice?  Let's see!"
-MSG_DANGER_IN = "Danger in "
-ERROR_INVALID_COLUMN = "Error!  Invalid column number."
-ERROR_COLUMN_FULL = "Error!  Column is full."
-ERROR_ILLEGAL_INPUT = "Error!  Illegal input."
+from game import Game
+from player import Player
 
 class Game_Mode(enum.IntEnum):
     NONE = 0
@@ -49,22 +17,6 @@ class Column_Select(enum.IntEnum):
     QUIT_GAME = -2
     INVALID_COLUMN = -1
 
-class Game:
-    def __init__(self, active_player, game_mode):
-        self.active_player = active_player
-        self.game_mode = game_mode
-        self.game_won = False
-        self.first_move = True
-        self.checkmate_cols = []
-        self.matchpoint_cols = []
-        self.tokens_in_cols = [0, 0, 0, 0, 0, 0 ,0]
-        self.moves_left = MAX_MOVES
-        self.quit = False
-
-class Player:
-    def __init__(self, name, token_symbol):
-        self.name = name
-        self.token_symbol = token_symbol
 
 field = (
     [" ", " ", " ", " ", " ", " ", " "],
@@ -76,141 +28,143 @@ field = (
     )
 
 def print_matrix(matrix):
-    for i in range(len(matrix)):
-        for j in range(len(matrix[i]) - 1):
-            print("["+ matrix[i][j]+ "]", end = '')
-        print("[" + matrix[i][len(matrix[i]) - 1] + "]")
+    for row in range(len(matrix)):
+        for col in range(len(matrix[row]) - 1):
+            print("["+ matrix[row][col]+ "]", end = '')
+        print("[" + matrix[row][len(matrix[row]) - 1] + "]")
     print_footer()
 
 def print_footer():
-    for i in range(1, UNDERLINE_LENGTH):
+    for i in range(1, const.UNDERLINE_LEN):
         print("-", end = '')
     print("-")
-    for i in range(1, (FIELD_WIDTH + 1)):
+    for i in range(1, (const.FIELD_WIDTH + 1)):
         print(" " + str(i) + " ", end = '')
     print("\n")
 
-def check_for_win_horizontal(matrix, game):
+def check_for_win_hori(matrix, game):
     symbol = game.active_player.token_symbol
-    for i in range(FIELD_HEIGHT - 1, -1, -1):
-        for j in range(FIELD_WIDTH - 2):
-            if has_3_horizontal(matrix, i, j, symbol):
-                if j < (FIELD_WIDTH - 3) and matrix[i][j + 3] == symbol:
-                    print(game.active_player.name + MSG_HAS_WON)
+    for row in range(const.BOTTOM_ROW, -1, -1):
+        for col in range(const.FIELD_WIDTH - 2):
+            if has_3_hori(matrix, row, col, symbol):
+                if col < (const.FIELD_WIDTH - 3) and matrix[row][col + 3] == symbol:
+                    print(game.active_player.name + messages.HAS_WON)
                     game.game_won = True
                     break
-                elif (j < FIELD_WIDTH - 3
-                        and is_checkmate_horizontal_right(matrix, i, j, symbol)):
-                    mark_col_as_checkmate_or_matchpoint(j + 3, symbol)
-                    if is_checkmate_horizontal_left(matrix, i, j, symbol):
-                        mark_col_as_checkmate_or_matchpoint(j - 1, symbol)
-                elif is_checkmate_horizontal_left(matrix, i, j, symbol):
-                    mark_col_as_checkmate_or_matchpoint(j - 1, symbol)
+                elif (col < const.FIELD_WIDTH - 3
+                        and is_check_hori_right(matrix, row, col, symbol)):
+                    mark_col_as_check_or_matchpnt(col + 3, symbol)
+                    if is_check_hori_left(matrix, row, col, symbol):
+                        mark_col_as_check_or_matchpnt(col - 1, symbol)
+                elif is_check_hori_left(matrix, row, col, symbol):
+                    mark_col_as_check_or_matchpnt(col - 1, symbol)
 
-def mark_col_as_checkmate_or_matchpoint(column, symbol):
+def mark_col_as_check_or_matchpnt(column, symbol):
     if symbol == player1.token_symbol:
-        game.checkmate_cols.append(column)
+        game.check_cols.append(column)
     else:
-        game.matchpoint_cols.append(column)
+        game.matchpnt_cols.append(column)
 
-def has_3_horizontal(matrix, i, j, symbol):
-    return (matrix[i][j] == symbol
-            and matrix[i][j + 1] == symbol
-            and matrix[i][j + 2] == symbol)
+def has_3_hori(matrix, row, col, symbol):
+    return (matrix[row][col] == symbol
+            and matrix[row][col + 1] == symbol
+            and matrix[row][col + 2] == symbol)
 
-def is_checkmate_horizontal_right(matrix, i, j, symbol):
-    return (matrix[i][j + 3] == ' '
-            and (is_bottom_row(i)
-                    or (i < FIELD_HEIGHT - 1 and matrix[i + 1][j + 3] != ' ')));
+def is_check_hori_right(matrix, row, col, symbol):
+    return (matrix[row][col + 3] == ' '
+            and (
+                    is_bottom_row(row)
+                    or (row < const.BOTTOM_ROW and matrix[row + 1][col + 3] != ' '))
+            );
 
 def is_bottom_row(row):
-    return row == FIELD_HEIGHT - 1
+    return row == const.BOTTOM_ROW
 
-def is_checkmate_horizontal_left(matrix, i, j, symbol):
-    return (matrix[i][j - 1] == ' '
-            and (i == FIELD_HEIGHT - 1
-                    or (i < FIELD_HEIGHT - 1 and matrix[i + 1][j - 1] != ' ')));
+def is_check_hori_left(matrix, row, col, symbol):
+    return (matrix[row][col - 1] == ' '
+            and (is_bottom_row(row)
+                or (row < const.BOTTOM_ROW and matrix[row + 1][col - 1] != ' ')));
  
-def check_for_win_vertical(matrix, game):
+def check_for_win_vert(matrix, game):
     symbol = game.active_player.token_symbol
-    for i in range(FIELD_HEIGHT - 1, 2, -1):
-        for j in range(FIELD_WIDTH):
-            if has_3_vertical(matrix, i, j, symbol):
-                if matrix[i - 3][j] == symbol:
+    for row in range(const.BOTTOM_ROW, 2, -1):
+        for col in range(const.FIELD_WIDTH):
+            if has_3_vert(matrix, row, col, symbol):
+                if matrix[row - 3][col] == symbol:
                     game.game_won = True
                     break
-                elif vertical_empty(matrix, i, j):
-                    mark_col_as_checkmate_or_matchpoint(j, symbol)
+                elif vert_empty(matrix, row, col):
+                    mark_col_as_check_or_matchpnt(col, symbol)
 
-def has_3_vertical(matrix, i, j, symbol):
-    return (matrix[i][j] == symbol
-            and matrix[i - 1][j] == symbol
-            and matrix[i - 2][j] == symbol)
+def has_3_vert(matrix, row, col, symbol):
+    return (matrix[row][col] == symbol
+            and matrix[row - 1][col] == symbol
+            and matrix[row - 2][col] == symbol)
 
-def vertical_empty(matrix, i, j):
-    return matrix[i - 3][j] == ' '
+def vert_empty(matrix, row, col):
+    return matrix[row - 3][col] == ' '
 
 def check_for_win_diagonal_nw_to_se(matrix, game):
     symbol = game.active_player.token_symbol
-    for i in range(FIELD_WIDTH - 2):
-        for j in range(FIELD_WIDTH - 2):
-            if ((FIELD_HEIGHT - 2) > i > 0 and (FIELD_WIDTH - 2) > j > 0
-                    and has_3_diagonal_nw_to_se(matrix, i, j, symbol)
-                    and matrix[i - 1][j - 1] == ' '
-                    and matrix[i][j - 1] != ' '):
-                mark_col_as_checkmate_or_matchpoint(j - 1, symbol)
-            if i < (FIELD_HEIGHT - 3) and j < (FIELD_WIDTH - 3):
-                if has_3_diagonal_nw_to_se(matrix, i, j, symbol):
-                    if matrix[i + 3][j + 3] == symbol:
-                        print(game.active_player.name + MSG_HAS_WON)
+    for row in range(const.FIELD_WIDTH - 2):
+        for col in range(const.FIELD_WIDTH - 2):
+            if ((const.FIELD_HEIGHT - 2) > row > 0 and (const.FIELD_WIDTH - 2) > col > 0
+                    and has_3_diagonal_nw_to_se(matrix, row, col, symbol)
+                    and matrix[row - 1][col - 1] == ' '
+                    and matrix[row][col - 1] != ' '):
+                mark_col_as_check_or_matchpnt(col - 1, symbol)
+            if row < (const.FIELD_HEIGHT - 3) and col < (const.FIELD_WIDTH - 3):
+                if has_3_diagonal_nw_to_se(matrix, row, col, symbol):
+                    if matrix[row + 3][col + 3] == symbol:
+                        print(game.active_player.name + messages.HAS_WON)
                         game.game_won = True
                         break
-                    if (matrix[i + 3][j + 3] == ' '
-                        and (is_bottom_row(i + 3)
-                                or matrix[i + 4][j + 3] != ' ')):
-                        mark_col_as_checkmate_or_matchpoint(j + 3, symbol)
+                    if (matrix[row + 3][col + 3] == ' '
+                        and (is_bottom_row(row + 3)
+                                or matrix[row + 4][col + 3] != ' ')):
+                        mark_col_as_check_or_matchpnt(col + 3, symbol)
 
-def has_3_diagonal_nw_to_se(matrix, i, j, symbol):
-    return (matrix[i][j] == symbol
-            and matrix[i + 1][j + 1] == symbol
-            and matrix[i + 2][j + 2] == symbol)
+def has_3_diagonal_nw_to_se(matrix, row, col, symbol):
+    return (matrix[row][col] == symbol
+            and matrix[row + 1][col + 1] == symbol
+            and matrix[row + 2][col + 2] == symbol)
 
 def check_for_win_diagonal_sw_to_ne(matrix, game):
     symbol = game.active_player.token_symbol
-    for i in range(FIELD_HEIGHT - 1, 2, -1):
-        for j in range(5):
-            if has_3_diagonal_sw_to_ne(matrix, i, j, symbol):
-                if j < 4 and i > 2:
-                    if matrix[i - 3][j + 3] == symbol:
-                        print(game.active_player.name + MSG_HAS_WON) 
+    for row in range(const.BOTTOM_ROW, 2, -1):
+        for col in range(5): # Magic number.
+            if has_3_diagonal_sw_to_ne(matrix, row, col, symbol):
+                if col < 4 and row > 2: # Magic numbers.
+                    if matrix[row - 3][col + 3] == symbol:
+                        print(game.active_player.name + messages.HAS_WON) 
                         game.game_won = True
                         break
-                    elif (matrix[i - 3][j + 3] == ' '
-                            and matrix[i - 2][j + 3] != ' '):
-                        mark_col_as_checkmate_or_matchpoint(j + 3, symbol)
-                if (i < FIELD_HEIGHT - 1 and j > 0
-                        and (matrix[i + 1][j - 1] == ' '
-                        and (i == FIELD_HEIGHT - 2
-                                or matrix[i + 2][j - 1] != ' '))):
-                    mark_col_as_checkmate_or_matchpoint(j - 1, symbol)
+                    elif (matrix[row - 3][col + 3] == ' '
+                            and matrix[row - 2][col + 3] != ' '):
+                        mark_col_as_check_or_matchpnt(col + 3, symbol)
+                if (row < const.BOTTOM_ROW and col > 0
+                        and (matrix[row + 1][col - 1] == ' '
+                        and (row == const.FIELD_HEIGHT - 2
+                                or matrix[row + 2][col - 1] != ' '))):
+                    mark_col_as_check_or_matchpnt(col - 1, symbol)
 
-def has_3_diagonal_sw_to_ne(matrix, i, j, symbol):
-    return (matrix[i][j] == symbol
-            and matrix[i - 1][j + 1] == symbol
-            and matrix[i - 2][j + 2] == symbol)
+def has_3_diagonal_sw_to_ne(matrix, row, col, symbol):
+    return (matrix[row][col] == symbol
+            and matrix[row - 1][col + 1] == symbol
+            and matrix[row - 2][col + 2] == symbol)
 
 def check_for_win(matrix, game):
-    check_for_win_horizontal(matrix, game)
-    check_for_win_vertical(matrix, game)
+    check_for_win_hori(matrix, game)
+    check_for_win_vert(matrix, game)
     check_for_win_diagonal_nw_to_se(matrix, game)
     check_for_win_diagonal_sw_to_ne(matrix, game)
 
 def check_for_win_vs_bot(matrix, game):
-    reset_matchpoint_cols(game)
+    reset_matchpnt_cols(game)
     check_for_win(matrix, game)
     if game.game_won:
         wipe_screen()
-        print(game.active_player.name + MSG_HAS_WON)
+        print(game.active_player.name + messages.HAS_WON)
         return True
 
 def wipe_screen():
@@ -218,24 +172,21 @@ def wipe_screen():
     print_matrix(field)
 
 def toggle_active_player(game):
-    if game.active_player == player1:
-        game.active_player = player2
-    else:
-        game.active_player = player1
+    game.active_player = player1 if game.active_player == player2 else player2
 
 def place_token(matrix, column, game):
     if Column_Select.QUIT_GAME != column:
-        for i in range(FIELD_HEIGHT - 1, -1, -1):
-            if matrix[i][column] == ' ':
-                matrix[i][column] = game.active_player.token_symbol
+        for row in range(const.BOTTOM_ROW, -1, -1):
+            if matrix[row][column] == ' ':
+                matrix[row][column] = game.active_player.token_symbol
                 game.tokens_in_cols[column] += 1
                 game.moves_left -= 1
                 break
 
 def get_column_from_player(active_player):
-    print(active_player.name + MSG_PROMPT_PLAYER_FOR_MOVE, end = '')
+    print(active_player.name + messages.PROMPT_PLAYER_FOR_MOVE, end = '')
     user_input = input()
-    if user_input == KEY_TO_QUIT:
+    if user_input == const.KEY_TO_QUIT:
         return Column_Select.QUIT_GAME 
     else:
         try:
@@ -246,80 +197,77 @@ def get_column_from_player(active_player):
 def prompt_player_for_move(game):
     while True:
         selected_column = get_column_from_player(game.active_player)
-        if Column_Select.QUIT_GAME == selected_column:
+        if Column_Select.QUIT_GAME is selected_column:
             game.quit = True
             return selected_column
-        if FIELD_WIDTH > selected_column > -1:
+        if const.FIELD_WIDTH > selected_column > -1:
             if False == is_col_full(selected_column):
                 return selected_column
             else:
-                print(ERROR_COLUMN_FULL)
+                print(errors.COLUMN_FULL)
         else:
-            print(ERROR_INVALID_COLUMN)
+            print(errors.INVALID_COLUMN)
 
 def is_col_full(col):
-    if game.tokens_in_cols[col] < FIELD_HEIGHT:
-        return False
-    else:
-        return True
+    return False if game.tokens_in_cols[col] < const.FIELD_HEIGHT else True
 
-def reset_checkmate_cols(game):
-    for i in range(len(game.checkmate_cols) - 1, -1, -1):
-        game.checkmate_cols.pop(i)
+def reset_check_cols(game):
+    for i in range(len(game.check_cols) - 1, -1, -1):
+        game.check_cols.pop(i)
 
-def reset_matchpoint_cols(game):
-    for i in range(len(game.matchpoint_cols) - 1, -1, -1):
-        game.matchpoint_cols.pop(i)
+def reset_matchpnt_cols(game):
+    for i in range(len(game.matchpnt_cols) - 1, -1, -1):
+        game.matchpnt_cols.pop(i)
 
-def print_checkmate_cols(game):
-    if game.checkmate_cols:
-        for col in game.checkmate_cols:
+def print_check_cols(game):
+    if game.check_cols:
+        for col in game.check_cols:
             print(col + 1, " ", end = '')
 
 def print_bots_turn_msg(game):
-        if game.matchpoint_cols:
-            print(MSG_MATCHPOINTS_IN, end = '')
-            for col in game.matchpoint_cols:
+        if game.matchpnt_cols:
+            print(messages.matchpntS_IN, end = '')
+            for col in game.matchpnt_cols:
                 print(col + 1, " ", end = '')
-            print(MSG_WILL_IT_NOTICE, MSG_PRESS_ENTER)
-        if game.checkmate_cols:
-            print(MSG_BOT_TURN)
-            print(MSG_DANGER_IN, end = '')
-            print_checkmate_cols(game)
-            print(MSG_WILL_IT_NOTICE, MSG_PRESS_ENTER)
+            print(messages.WILL_IT_NOTICE, messages.PRESS_ENTER)
+        if game.check_cols:
+            print(messages.BOT_TURN)
+            print(messages.DANGER_IN, end = '')
+            print_check_cols(game)
+            print(messages.WILL_IT_NOTICE, messages.PRESS_ENTER)
         else:
-            print(MSG_BOT_TURN, MSG_PRESS_ENTER)
+            print(messages.BOT_TURN, messages.PRESS_ENTER)
         input()
 
 def select_col_for_bot(game):
-    if game.matchpoint_cols:
-        for col in game.matchpoint_cols:
+    if game.matchpnt_cols:
+        for col in game.matchpnt_cols:
             selected_column = col
             break
         return selected_column
-    if game.checkmate_cols:
-        for col in game.checkmate_cols:
+    if game.check_cols:
+        for col in game.check_cols:
             selected_column = col
             break
-        reset_checkmate_cols(game)
+        reset_check_cols(game)
         return selected_column
     else:
         while True:
-            selected_column = get_random_column_no()
+            selected_column = get_rand_col()
             if False == is_col_full(selected_column):
                 return selected_column
 
-def get_random_column_no():
-    return random.randint(0, (FIELD_WIDTH - 1))
+def get_rand_col():
+    return random.randint(0, (const.FIELD_WIDTH - 1))
 
 def first_move_col(matrix):
-    if matrix[FIELD_HEIGHT - 1][MIDDLE_COL] == ' ':
-        return MIDDLE_COL
+    if matrix[const.BOTTOM_ROW][const.MIDDLE_COL] == ' ':
+        return const.MIDDLE_COL
     else:
         if random.randint(0, 1) == 0:
-            return MIDDLE_COL - 1
+            return const.MIDDLE_COL - 1
         else:
-            return MIDDLE_COL + 1
+            return const.MIDDLE_COL + 1
 
 def bot_make_move(matrix, game):
     if game.first_move:
@@ -331,47 +279,44 @@ def bot_make_move(matrix, game):
 def select_game_mode():
     game_mode = Game_Mode.NONE
     while True:
-        print(MSG_CHOOSE_MODE, end = '')
+        print(messages.CHOOSE_MODE, end = '')
         try:
             game_mode = int(input())
         except:
-            print(ERROR_ILLEGAL_INPUT)
+            print(errors.ILLEGAL_INPUT)
             continue
         if game_mode == Game_Mode.VS_BOT:
             return game_mode
         elif game_mode == Game_Mode.TWO_PLAYERS:
             return game_mode
         else:
-            print(ERROR_ILLEGAL_INPUT)
+            print(errors.ILLEGAL_INPUT)
 
 def is_tie(game):
     if 1 > game.moves_left:
-        print(MSG_TIE_GAME)
+        print(messages.TIE_GAME)
         return True
     else:
         return False
 
 def is_win_or_tie(matrix, game):
-    if check_for_win_vs_bot(field, game) or is_tie(game):
-        return True
-    else:
-        return False
+    return True if check_for_win_vs_bot(field, game) or is_tie(game) else False
 
 wipe_screen()
 
-print(MSG_LETS_PLAY_CONNECT4 + "\n")
-print(MSG_PROMPT_PLAYER_1_FOR_NAME)
-print(MSG_ENTER_NAME, end = '')
-player1 = Player(input(), PLAYER_1_SYMBOL)
-print(MSG_WELCOME + player1.name + MSG_GOOD_LUCK + "\n")
+print(messages.LETS_PLAY_CONNECT4 + "\n")
+print(messages.PROMPT_PLAYER_1_FOR_NAME)
+print(messages.ENTER_NAME, end = '')
+player1 = Player(input(), const.PLAYER_1_SYMBOL)
+print(messages.WELCOME + player1.name + messages.GOOD_LUCK + "\n")
 
 game_mode = select_game_mode()
 
 if Game_Mode.TWO_PLAYERS == game_mode:
-    print(MSG_PROMPT_PLAYER_2_FOR_NAME)
-    print(MSG_ENTER_NAME, end = '')
-    player2 = Player(input(), PLAYER_2_SYMBOL)
-    print(MSG_WELCOME + player2.name + MSG_GOOD_LUCK + "\n")
+    print(messages.PROMPT_PLAYER_2_FOR_NAME)
+    print(messages.ENTER_NAME, end = '')
+    player2 = Player(input(), const.PLAYER_2_SYMBOL)
+    print(messages.WELCOME + player2.name + messages.GOOD_LUCK + "\n")
     game = Game(player1, game_mode)
     while True != game.game_won:
         wipe_screen()
@@ -381,12 +326,12 @@ if Game_Mode.TWO_PLAYERS == game_mode:
         if is_tie(game):
             break
         toggle_active_player(game)
-    print(MSG_THANKS_FOR_PLAYING)
+    print(messages.THANKS_FOR_PLAYING)
 elif Game_Mode.VS_BOT == game_mode:
     random.seed()
-    player2 = Player(BOT_NAME, PLAYER_2_SYMBOL)
+    player2 = Player(bot.BOT_NAME, const.PLAYER_2_SYMBOL)
     game = Game(player1, game_mode)
-    print(MSG_PLAY_VS_BOT)
+    print(messages.PLAY_VS_BOT)
     input()
     while True:
         wipe_screen()
@@ -405,4 +350,4 @@ elif Game_Mode.VS_BOT == game_mode:
         if is_win_or_tie(field, game):
             break
         toggle_active_player(game)
-    print(MSG_THANKS_FOR_PLAYING)
+    print(messages.THANKS_FOR_PLAYING)

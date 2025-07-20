@@ -1,0 +1,2 @@
+BOT_LEVEL = 0.065
+BOT_NAME = "Bot"
