@@ -1,4 +1,4 @@
-import constants as const
+import core.constants as const
 
 class Game:
     def __init__(self, active_player, game_mode):

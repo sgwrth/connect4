@@ -1,12 +1,12 @@
-import bot
-import constants as const
+import core.bot as bot
+import core.constants as const
 import enum
-import errors
-import messages
+import core.errors as errors
+import core.messages as messages
 import os
 import random
-from game import Game
-from player import Player
+from core.game import Game
+from core.player import Player
 
 class Game_Mode(enum.IntEnum):
     NONE = 0
@@ -17,7 +17,7 @@ class Column_Select(enum.IntEnum):
     QUIT_GAME = -2
     INVALID_COLUMN = -1
 
-# Create 'board'.
+# Create 7x6 board.
 board = [[" " for _ in range(7)] for _ in range(6)]
 
 def print_board(board):
@@ -34,24 +34,29 @@ def check_for_win_hori(board, game):
     symbol = game.active_player.token_symbol
     for row in range(const.BOTTOM_ROW, -1, -1):
         for col in range(const.FIELD_WIDTH - 2):
-            if has_3_hori(board, row, col, symbol):
-                if col < (const.FIELD_WIDTH - 3) and board[row][col + 3] == symbol:
-                    print(game.active_player.name + messages.HAS_WON)
-                    game.game_won = True
-                    break
-                elif (col < const.FIELD_WIDTH - 3
-                        and is_check_hori_right(board, row, col, symbol)):
-                    mark_col_as_check_or_matchpnt(col + 3, symbol)
-                    if is_check_hori_left(board, row, col, symbol):
-                        mark_col_as_check_or_matchpnt(col - 1, symbol)
-                elif is_check_hori_left(board, row, col, symbol):
-                    mark_col_as_check_or_matchpnt(col - 1, symbol)
 
-def mark_col_as_check_or_matchpnt(column, symbol):
+            if not has_3_hori(board, row, col, symbol):
+                continue
+
+            if col >= const.FIELD_WIDTH - 3:
+                continue
+
+            if board[row][col + 3] == symbol:
+                    print(f"{game.active_player.name} {messages.HAS_WON}")
+                    game.game_won = True
+                    return
+
+            if is_check_hori_right(board, row, col, symbol):
+                mark_col_as_check_or_matchpnt(col + 3, symbol)
+
+            if is_check_hori_left(board, row, col, symbol):
+                mark_col_as_check_or_matchpnt(col - 1, symbol)
+
+def mark_col_as_check_or_matchpnt(col, symbol):
     if symbol == player1.token_symbol:
-        game.check_cols.append(column)
+        game.check_cols.append(col)
     else:
-        game.matchpnt_cols.append(column)
+        game.matchpnt_cols.append(col)
 
 def has_3_hori(board, row, col, symbol):
     return (board[row][col] == symbol
@@ -59,65 +64,106 @@ def has_3_hori(board, row, col, symbol):
             and board[row][col + 2] == symbol)
 
 def is_check_hori_right(board, row, col, symbol):
-    return (board[row][col + 3] == ' '
-            and (is_bottom_row(row)
-                    or (row < const.BOTTOM_ROW
-                            and board[row + 1][col + 3] != ' ')));
-
-def is_bottom_row(row):
-    return row == const.BOTTOM_ROW
+    fourth_on_right_is_empty = board[row][col + 3] == " "
+    below_4th_is_filled = row == const.BOTTOM_ROW or board[row + 1][col + 3] != " "
+    return fourth_on_right_is_empty and below_4th_is_filled
 
 def is_check_hori_left(board, row, col, symbol):
-    return (board[row][col - 1] == ' '
-            and (is_bottom_row(row)
-                or (row < const.BOTTOM_ROW and board[row + 1][col - 1] != ' ')));
+    fourth_on_left_is_empty = board[row][col - 1] == " "
+    below_4th_is_filled = row == const.BOTTOM_ROW or board[row + 1][col - 1] != " "
+    return fourth_on_left_is_empty and below_4th_is_filled
  
 def check_for_win_vert(board, game):
     symbol = game.active_player.token_symbol
-    for row in range(const.BOTTOM_ROW, 2, -1):
+    for row in range(const.BOTTOM_ROW, const.THIRD_FROM_TOP, const.GO_UP):
         for col in range(const.FIELD_WIDTH):
-            if has_3_vert(board, row, col, symbol):
-                if board[row - 3][col] == symbol:
-                    game.game_won = True
-                    break
-                elif vert_empty(board, row, col):
-                    mark_col_as_check_or_matchpnt(col, symbol)
+
+            if not has_3_vert(board, row, col, symbol):
+                continue
+
+            if board[row - 3][col] == symbol:
+                print(f"{game.active_player.name} {messages.HAS_WON}")
+                game.game_won = True
+                return
+
+            if vert_4th_empty(board, row, col):
+                mark_col_as_check_or_matchpnt(col, symbol)
 
 def has_3_vert(board, row, col, symbol):
     return (board[row][col] == symbol
             and board[row - 1][col] == symbol
             and board[row - 2][col] == symbol)
 
-def vert_empty(board, row, col):
-    return board[row - 3][col] == ' '
+def vert_4th_empty(board, row, col):
+    return board[row - 3][col] == " "
 
 def check_for_win_diagonal_nw_to_se(board, game):
     symbol = game.active_player.token_symbol
-    for row in range(const.FIELD_WIDTH - 2):
+    for row in range(const.FIELD_HEIGHT - 2):
         for col in range(const.FIELD_WIDTH - 2):
-            if ((const.FIELD_HEIGHT - 2) > row > 0
-                    and (const.FIELD_WIDTH - 2) > col > 0
-                    and has_3_diagonal_nw_to_se(board, row, col, symbol)
-                    and board[row - 1][col - 1] == ' '
-                    and board[row][col - 1] != ' '):
+
+            enough_se_space_for_4 = (row < const.FIELD_HEIGHT - 3
+                                     and col < const.FIELD_WIDTH - 3)
+
+            if not has_3_diagonal_nw_to_se(board, row, col, symbol):
+                continue
+
+            nw_4th_is_empty = board[row - 1][col - 1] == ' '
+            below_nw_4th_is_filled = board[row][col - 1] != ' '
+
+            if row > 0 and col > 0 and nw_4th_is_empty and below_nw_4th_is_filled:
                 mark_col_as_check_or_matchpnt(col - 1, symbol)
-            if row < (const.FIELD_HEIGHT - 3) and col < (const.FIELD_WIDTH - 3):
-                if has_3_diagonal_nw_to_se(board, row, col, symbol):
-                    if board[row + 3][col + 3] == symbol:
-                        print(game.active_player.name + messages.HAS_WON)
-                        game.game_won = True
-                        break
-                    if (board[row + 3][col + 3] == ' '
-                        and (is_bottom_row(row + 3)
-                                or board[row + 4][col + 3] != ' ')):
-                        mark_col_as_check_or_matchpnt(col + 3, symbol)
+
+            if not enough_se_space_for_4:
+                continue
+
+            if board[row + 3][col + 3] == symbol:
+                print(f"{game.active_player.name} {messages.HAS_WON}")
+                game.game_won = True
+                return
+
+            se_4th_is_empty = board[row + 3][col + 3] == ' '
+            below_se_4th_is_filled = (row + 3 == const.BOTTOM_ROW
+                                      or board[row + 4][col + 3] != ' ')
+
+            if se_4th_is_empty and below_se_4th_is_filled:
+                mark_col_as_check_or_matchpnt(col + 3, symbol)
 
 def has_3_diagonal_nw_to_se(board, row, col, symbol):
-    return (board[row][col] == symbol
-            and board[row + 1][col + 1] == symbol
-            and board[row + 2][col + 2] == symbol)
+    return all(board[row + i][col + i] == symbol for i in range(3))
 
 def check_for_win_diagonal_sw_to_ne(board, game):
+    symbol = game.active_player.token_symbol
+    for row in range(const.BOTTOM_ROW, const.THIRD_FROM_TOP, const.GO_UP):
+        for col in range(const.SECOND_FROM_RIGHT):
+
+            if not has_3_diagonal_sw_to_ne(board, row, col, symbol):
+                continue
+
+            enough_ne_space_for_4th = col < 4 and row > 2 # Magic numbers.
+            ne_4th_is_symbol = board[row - 3][col + 3] == symbol
+
+            if enough_ne_space_for_4th and ne_4th_is_symbol:
+                print(f"{game.active_player.name} {messages.HAS_WON}") 
+                game.game_won = True
+                return
+
+            ne_4th_is_empty = board[row - 3][col + 3] == " "
+            below_ne_4th_is_filled = board[row - 2][col + 3] != " "
+
+            if ne_4th_is_empty and below_ne_4th_is_filled:
+                mark_col_as_check_or_matchpnt(col + 3, symbol)
+
+            sw_cell_exists = row < const.BOTTOM_ROW and col > 0
+            sw_4th_is_empty = board[row + 1][col - 1] == " "
+            below_sw_4th_is_filled = (row == const.FIELD_HEIGHT - 2
+                                      or board[row + 2][col - 1] != " ")
+
+            if sw_cell_exists and sw_4th_is_empty and below_sw_4th_is_filled:
+                mark_col_as_check_or_matchpnt(col - 1, symbol)
+
+
+    """
     symbol = game.active_player.token_symbol
     for row in range(const.BOTTOM_ROW, 2, -1):
         for col in range(5): # Magic number.
@@ -135,6 +181,7 @@ def check_for_win_diagonal_sw_to_ne(board, game):
                         and (row == const.FIELD_HEIGHT - 2
                                 or board[row + 2][col - 1] != ' '))):
                     mark_col_as_check_or_matchpnt(col - 1, symbol)
+    """
 
 def has_3_diagonal_sw_to_ne(board, row, col, symbol):
     return (board[row][col] == symbol
@@ -152,11 +199,11 @@ def check_for_win_vs_bot(board, game):
     check_for_win(board, game)
     if game.game_won:
         wipe_screen()
-        print(game.active_player.name + messages.HAS_WON)
+        print(f"{game.active_player.name} {messages.HAS_WON}")
         return True
 
 def wipe_screen():
-    os.system('cls' if os.name == 'nt' else 'clear')
+    os.system("cls" if os.name == "nt" else "clear")
     print_board(board)
 
 def toggle_active_player(game):
@@ -214,9 +261,8 @@ def print_check_cols(game):
 
 def print_bots_turn_msg(game):
         if game.matchpnt_cols:
-            print(messages.matchpntS_IN, end = '')
-            for col in game.matchpnt_cols:
-                print(col + 1, " ", end = '')
+            print(messages.MATCHPOINTS_IN, end = '')
+            print(" ".join(f"{col + 1}" for col in game.matchpnt_cols))
             print(messages.WILL_IT_NOTICE, messages.PRESS_ENTER)
         if game.check_cols:
             print(messages.BOT_TURN)
@@ -229,21 +275,15 @@ def print_bots_turn_msg(game):
 
 def select_col_for_bot(game):
     if game.matchpnt_cols:
-        for col in game.matchpnt_cols:
-            selected_column = col
-            break
-        return selected_column
+        return game.matchpnt_cols[0] 
     if game.check_cols:
-        for col in game.check_cols:
-            selected_column = col
-            break
+        selected_col = game.check_cols[0]
         reset_check_cols(game)
-        return selected_column
-    else:
-        while True:
-            selected_column = get_rand_col()
-            if False == is_col_full(selected_column):
-                return selected_column
+        return selected_col
+    while True:
+        selected_col = get_rand_col()
+        if not is_col_full(selected_col):
+            return selected_col
 
 def get_rand_col():
     return random.randint(0, (const.FIELD_WIDTH - 1))
@@ -251,11 +291,9 @@ def get_rand_col():
 def first_move_col(board):
     if board[const.BOTTOM_ROW][const.MIDDLE_COL] == ' ':
         return const.MIDDLE_COL
-    else:
-        if random.randint(0, 1) == 0:
-            return const.MIDDLE_COL - 1
-        else:
-            return const.MIDDLE_COL + 1
+    if random.randint(0, 1) == 0:
+        return const.MIDDLE_COL - 1
+    return const.MIDDLE_COL + 1
 
 def bot_make_move(board, game):
     if game.first_move:
@@ -275,10 +313,9 @@ def select_game_mode():
             continue
         if game_mode == Game_Mode.VS_BOT:
             return game_mode
-        elif game_mode == Game_Mode.TWO_PLAYERS:
+        if game_mode == Game_Mode.TWO_PLAYERS:
             return game_mode
-        else:
-            print(errors.ILLEGAL_INPUT)
+        print(errors.ILLEGAL_INPUT)
 
 def is_tie(game):
     if 1 > game.moves_left:
@@ -315,7 +352,8 @@ if Game_Mode.TWO_PLAYERS == game_mode:
             break
         toggle_active_player(game)
     print(messages.THANKS_FOR_PLAYING)
-elif Game_Mode.VS_BOT == game_mode:
+
+if Game_Mode.VS_BOT == game_mode:
     random.seed()
     player2 = Player(bot.BOT_NAME, const.PLAYER_2_SYMBOL)
     game = Game(player1, game_mode)

@@ -1,5 +1,5 @@
-import bot
-import constants as const
+import core.bot as bot
+import core.constants as const
 
 PROMPT_PLAYER_1_FOR_NAME = "Player 1, what is your name?"
 PROMPT_PLAYER_2_FOR_NAME = "Player 2, what is your name?"
@@ -12,7 +12,7 @@ ENTER_NAME = "Enter name: "
 WELCOME = "Welcome, "
 GOOD_LUCK = "!  And good luck!"
 LETS_PLAY_CONNECT4 = "Let's play Connect 4!"
-HAS_WON = " has won!"
+HAS_WON = "has won!"
 CHOOSE_MODE = "Select game mode (1 = vs. bot, 2 = two players): "
 PRESS_ENTER = "Press ENTER to continue."
 PLAY_VS_BOT = (
@@ -23,4 +23,3 @@ BOT_TURN = "It's Bot's turn now!"
 MATCHPOINTS_IN = "Matchpoint(s) in "
 WILL_IT_NOTICE = "\nWill it notice?  Let's see!"
 DANGER_IN = "Danger in "
-
