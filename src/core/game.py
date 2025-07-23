@@ -20,3 +20,5 @@ class Game:
 
     def toggle_active_player(self, player1, player2):
         self.active_player = player1 if self.active_player == player2 else player2
+
+

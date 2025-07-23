@@ -20,45 +20,6 @@ class Column_Select(enum.IntEnum):
 
 board = Board()
 
-def check_for_win_hori(board, game):
-    symbol = game.active_player.token_symbol
-    for row in range(const.BOTTOM_ROW, -1, -1):
-        for col in range(const.FIELD_WIDTH - 2):
-
-            if not has_3_hori(board, row, col, symbol):
-                continue
-
-            if col >= const.FIELD_WIDTH - 3:
-                continue
-
-            right_4th_is_symbol = board.matrix[row][col + 3] == symbol
-
-            if right_4th_is_symbol:
-                    print(f"{game.active_player.name} {messages.HAS_WON}")
-                    game.game_won = True
-                    return
-
-            if is_check_hori_right(board, row, col, symbol):
-                game.mark_col_as_check_or_matchpnt(col + 3, player1, symbol)
-
-            if is_check_hori_left(board, row, col, symbol):
-                game.mark_col_as_check_or_matchpnt(col - 1, player1, symbol)
-
-def has_3_hori(board, row, col, symbol):
-    return all(board.matrix[row][col + i] == symbol for i in range(3))
-
-def is_check_hori_right(board, row, col, symbol):
-    fourth_on_right_is_empty = board.matrix[row][col + 3] == " "
-    below_4th_is_filled = (row == const.BOTTOM_ROW
-                           or board.matrix[row + 1][col + 3] != " ")
-    return fourth_on_right_is_empty and below_4th_is_filled
-
-def is_check_hori_left(board, row, col, symbol):
-    fourth_on_left_is_empty = board.matrix[row][col - 1] == " "
-    below_4th_is_filled = (row == const.BOTTOM_ROW
-                           or board.matrix[row + 1][col - 1] != " ")
-    return fourth_on_left_is_empty and below_4th_is_filled
- 
 def check_for_win_vert(board, game):
     symbol = game.active_player.token_symbol
     for row in range(const.BOTTOM_ROW, const.THIRD_FROM_TOP, const.GO_UP):
@@ -158,7 +119,7 @@ def has_3_diagonal_sw_to_ne(board, row, col, symbol):
     return all(board.matrix[row - i][col + i] == symbol for i in range(3))
 
 def check_for_win(board, game):
-    check_for_win_hori(board, game)
+    board.check_for_win_hori(game, player1)
     check_for_win_vert(board, game)
     check_for_win_diagonal_nw_to_se(board, game)
     check_for_win_diagonal_sw_to_ne(board, game)
