@@ -11,3 +11,12 @@ class Game:
         self.tokens_in_cols = [0, 0, 0, 0, 0, 0 ,0]
         self.moves_left = const.MAX_MOVES
         self.quit = False
+
+    def mark_col_as_check_or_matchpnt(self, col, player1, symbol):
+        if symbol == player1.token_symbol:
+            self.check_cols.append(col)
+        else:
+            self.matchpnt_cols.append(col)
+
+    def toggle_active_player(self, player1, player2):
+        self.active_player = player1 if self.active_player == player2 else player2
