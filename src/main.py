@@ -15,7 +15,7 @@ class Game_Mode(enum.IntEnum):
 
 class Column_Select(enum.IntEnum):
     QUIT_GAME = -2
-    INVALID_COLUMN = -1
+    INVALID_COL = -1
 
 # Create 7x6 board.
 board = [[" " for _ in range(7)] for _ in range(6)]
@@ -41,7 +41,9 @@ def check_for_win_hori(board, game):
             if col >= const.FIELD_WIDTH - 3:
                 continue
 
-            if board[row][col + 3] == symbol:
+            right_4th_is_symbol = board[row][col + 3] == symbol
+
+            if right_4th_is_symbol:
                     print(f"{game.active_player.name} {messages.HAS_WON}")
                     game.game_won = True
                     return
@@ -59,9 +61,7 @@ def mark_col_as_check_or_matchpnt(col, symbol):
         game.matchpnt_cols.append(col)
 
 def has_3_hori(board, row, col, symbol):
-    return (board[row][col] == symbol
-            and board[row][col + 1] == symbol
-            and board[row][col + 2] == symbol)
+    return all(board[row][col + i] == symbol for i in range(3))
 
 def is_check_hori_right(board, row, col, symbol):
     fourth_on_right_is_empty = board[row][col + 3] == " "
@@ -90,9 +90,7 @@ def check_for_win_vert(board, game):
                 mark_col_as_check_or_matchpnt(col, symbol)
 
 def has_3_vert(board, row, col, symbol):
-    return (board[row][col] == symbol
-            and board[row - 1][col] == symbol
-            and board[row - 2][col] == symbol)
+    return all(board[row - i][col] == symbol for i in range(3))
 
 def vert_4th_empty(board, row, col):
     return board[row - 3][col] == " "
@@ -141,9 +139,13 @@ def check_for_win_diagonal_sw_to_ne(board, game):
                 continue
 
             enough_ne_space_for_4th = col < 4 and row > 2 # Magic numbers.
+
+            if not enough_ne_space_for_4th:
+                continue
+
             ne_4th_is_symbol = board[row - 3][col + 3] == symbol
 
-            if enough_ne_space_for_4th and ne_4th_is_symbol:
+            if ne_4th_is_symbol:
                 print(f"{game.active_player.name} {messages.HAS_WON}") 
                 game.game_won = True
                 return
@@ -155,38 +157,19 @@ def check_for_win_diagonal_sw_to_ne(board, game):
                 mark_col_as_check_or_matchpnt(col + 3, symbol)
 
             sw_cell_exists = row < const.BOTTOM_ROW and col > 0
+
+            if not sw_cell_exists:
+                continue
+
             sw_4th_is_empty = board[row + 1][col - 1] == " "
-            below_sw_4th_is_filled = (row == const.FIELD_HEIGHT - 2
+            below_sw_4th_is_filled = (row == const.ROW_ABOVE_BOTTOM_ROW
                                       or board[row + 2][col - 1] != " ")
 
-            if sw_cell_exists and sw_4th_is_empty and below_sw_4th_is_filled:
+            if sw_4th_is_empty and below_sw_4th_is_filled:
                 mark_col_as_check_or_matchpnt(col - 1, symbol)
 
-
-    """
-    symbol = game.active_player.token_symbol
-    for row in range(const.BOTTOM_ROW, 2, -1):
-        for col in range(5): # Magic number.
-            if has_3_diagonal_sw_to_ne(board, row, col, symbol):
-                if col < 4 and row > 2: # Magic numbers.
-                    if board[row - 3][col + 3] == symbol:
-                        print(game.active_player.name + messages.HAS_WON) 
-                        game.game_won = True
-                        break
-                    elif (board[row - 3][col + 3] == ' '
-                            and board[row - 2][col + 3] != ' '):
-                        mark_col_as_check_or_matchpnt(col + 3, symbol)
-                if (row < const.BOTTOM_ROW and col > 0
-                        and (board[row + 1][col - 1] == ' '
-                        and (row == const.FIELD_HEIGHT - 2
-                                or board[row + 2][col - 1] != ' '))):
-                    mark_col_as_check_or_matchpnt(col - 1, symbol)
-    """
-
 def has_3_diagonal_sw_to_ne(board, row, col, symbol):
-    return (board[row][col] == symbol
-            and board[row - 1][col + 1] == symbol
-            and board[row - 2][col + 2] == symbol)
+    return all(board[row - i][col + i] == symbol for i in range(3))
 
 def check_for_win(board, game):
     check_for_win_hori(board, game)
@@ -209,17 +192,23 @@ def wipe_screen():
 def toggle_active_player(game):
     game.active_player = player1 if game.active_player == player2 else player2
 
-def place_token(board, column, game):
-    if Column_Select.QUIT_GAME != column:
-        for row in range(const.BOTTOM_ROW, -1, -1):
-            if board[row][column] == ' ':
-                board[row][column] = game.active_player.token_symbol
-                game.tokens_in_cols[column] += 1
-                game.moves_left -= 1
-                break
+def place_token(board, col, game):
 
-def get_column_from_player(active_player):
-    print(active_player.name + messages.PROMPT_PLAYER_FOR_MOVE, end = '')
+    if Column_Select.QUIT_GAME == col:
+        return
+
+    for row in range(const.BOTTOM_ROW, -1, const.GO_UP):
+        if cell_is_empty(board, row, col):
+            board[row][col] = game.active_player.token_symbol
+            game.tokens_in_cols[col] += 1
+            game.moves_left -= 1
+            return
+
+def cell_is_empty(board, row, col):
+    return board[row][col] == " "
+
+def get_col_from_player(active_player):
+    print(active_player.name + messages.PROMPT_PLAYER_FOR_MOVE, end = "")
     user_input = input()
     if user_input == const.KEY_TO_QUIT:
         return Column_Select.QUIT_GAME 
@@ -227,21 +216,27 @@ def get_column_from_player(active_player):
         try:
             return int(user_input) - 1
         except:
-            return Column_Select.INVALID_COLUMN
+            return Column_Select.INVALID_COL
 
 def prompt_player_for_move(game):
     while True:
-        selected_column = get_column_from_player(game.active_player)
-        if Column_Select.QUIT_GAME is selected_column:
+        selected_col = get_col_from_player(game.active_player)
+
+        if selected_col == Column_Select.QUIT_GAME:
             game.quit = True
-            return selected_column
-        if const.FIELD_WIDTH > selected_column > -1:
-            if False == is_col_full(selected_column):
-                return selected_column
-            else:
-                print(errors.COLUMN_FULL)
-        else:
-            print(errors.INVALID_COLUMN)
+            return selected_col
+
+        is_valid_col_num = const.FIELD_WIDTH > selected_col > -1
+
+        if not is_valid_col_num:
+            print(errors.INVALID_COL)
+            continue
+
+        if is_col_full(selected_col):
+            print(errors.COL_FULL)
+            continue
+
+        return selected_col
 
 def is_col_full(col):
     return False if game.tokens_in_cols[col] < const.FIELD_HEIGHT else True
@@ -254,23 +249,24 @@ def reset_matchpnt_cols(game):
     for i in range(len(game.matchpnt_cols) - 1, -1, -1):
         game.matchpnt_cols.pop(i)
 
-def print_check_cols(game):
+def check_cols_to_str(game):
     if game.check_cols:
-        for col in game.check_cols:
-            print(col + 1, " ", end = '')
+        return " ".join(f"{col + 1}" for col in game.check_cols)
+
+def matchpnt_cols_to_str(game):
+    if game.matchpnt_cols:
+        return " ".join(f"{col + 1}" for col in game.matchpnt_cols)
 
 def print_bots_turn_msg(game):
         if game.matchpnt_cols:
-            print(messages.MATCHPOINTS_IN, end = '')
-            print(" ".join(f"{col + 1}" for col in game.matchpnt_cols))
-            print(messages.WILL_IT_NOTICE, messages.PRESS_ENTER)
+            print(f"{messages.MATCHPNTS_IN} {matchpnt_cols_to_str(game)}")
+            print(f"{messages.WILL_IT_NOTICE}  {messages.PRESS_ENTER}")
         if game.check_cols:
-            print(messages.BOT_TURN)
-            print(messages.DANGER_IN, end = '')
-            print_check_cols(game)
-            print(messages.WILL_IT_NOTICE, messages.PRESS_ENTER)
+            print(f"{messages.BOT_TURN}")
+            print(f"{messages.DANGER_IN} {check_cols_to_str(game)}")
+            print(f"{messages.WILL_IT_NOTICE}  {messages.PRESS_ENTER}")
         else:
-            print(messages.BOT_TURN, messages.PRESS_ENTER)
+            print(f"{messages.BOT_TURN}  {messages.PRESS_ENTER}")
         input()
 
 def select_col_for_bot(game):
@@ -305,7 +301,7 @@ def bot_make_move(board, game):
 def select_game_mode():
     game_mode = Game_Mode.NONE
     while True:
-        print(messages.CHOOSE_MODE, end = '')
+        print(messages.CHOOSE_MODE, end = "")
         try:
             game_mode = int(input())
         except:
@@ -331,17 +327,17 @@ wipe_screen()
 
 print(messages.LETS_PLAY_CONNECT4 + "\n")
 print(messages.PROMPT_PLAYER_1_FOR_NAME)
-print(messages.ENTER_NAME, end = '')
+print(messages.ENTER_NAME, end = "")
 player1 = Player(input(), const.PLAYER_1_SYMBOL)
-print(messages.WELCOME + player1.name + messages.GOOD_LUCK + "\n")
+print(f"{messages.WELCOME}, {player1.name}!  {messages.GOOD_LUCK}\n")
 
 game_mode = select_game_mode()
 
 if Game_Mode.TWO_PLAYERS == game_mode:
     print(messages.PROMPT_PLAYER_2_FOR_NAME)
-    print(messages.ENTER_NAME, end = '')
+    print(messages.ENTER_NAME, end = "")
     player2 = Player(input(), const.PLAYER_2_SYMBOL)
-    print(messages.WELCOME + player2.name + messages.GOOD_LUCK + "\n")
+    print(f"{messages.WELCOME}, {player2.name}!  {messages.GOOD_LUCK}\n")
     game = Game(player1, game_mode)
     while True != game.game_won:
         wipe_screen()

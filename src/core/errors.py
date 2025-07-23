@@ -1,3 +1,3 @@
-INVALID_COLUMN = "Error!  Invalid column number."
-COLUMN_FLL = "Error!  Column is full."
+INVALID_COL = "Error!  Invalid column number."
+COL_FULL = "Error!  Column is full."
 ILLEGAL_INPUT = "Error!  Illegal input."
