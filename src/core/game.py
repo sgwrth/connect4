@@ -21,4 +21,12 @@ class Game:
     def toggle_active_player(self, player1, player2):
         self.active_player = player1 if self.active_player == player2 else player2
 
+    def reset_check_cols(self):
+        for i in range(len(self.check_cols) - 1, -1, -1):
+            self.check_cols.pop(i)
+
+    def reset_matchpnt_cols(self):
+        for i in range(len(self.matchpnt_cols) - 1, -1, -1):
+            self.matchpnt_cols.pop(i)
+
 

@@ -1,7 +1,9 @@
 import core.messages as msgs
 import core.constants as const
+import os
 from core.constants import FIELD_HEIGHT as HEIGHT
 from core.constants import FIELD_WIDTH as WIDTH
+from enums.col_select import Col_Select
 
 class Board:
     def __init__(self):
@@ -29,9 +31,9 @@ class Board:
                     continue
                 right_4th_is_symbol = self.matrix[row][col + 3] == symbol
                 if right_4th_is_symbol:
-                        print(f"{game.active_player.name} {msgs.HAS_WON}")
-                        game.game_won = True
-                        return
+                    print(f"{game.active_player.name} {msgs.HAS_WON}")
+                    game.game_won = True
+                    return
                 if self.is_check_hori_right(row, col, symbol):
                     game.mark_col_as_check_or_matchpnt(col + 3, player1, symbol)
 
@@ -49,3 +51,113 @@ class Board:
         below_4th_is_filled = (row == const.BOTTOM_ROW
                                or self.matrix[row + 1][col - 1] != " ")
         return fourth_on_left_is_empty and below_4th_is_filled
+
+    def place_token(self, col, game):
+        if col == Col_Select.QUIT_GAME:
+            return
+        for row in range(const.BOTTOM_ROW, -1, const.GO_UP):
+            if self.cell_is_empty(row, col):
+                self.matrix[row][col] = game.active_player.token_symbol
+                game.tokens_in_cols[col] += 1
+                game.moves_left -= 1
+                return
+
+    def cell_is_empty(self, row, col):
+        return self.matrix[row][col] == " "
+
+    # ---
+
+    def check_for_win_vert(self, game, player1):
+        symbol = game.active_player.token_symbol
+        for row in range(const.BOTTOM_ROW, const.THIRD_FROM_TOP, const.GO_UP):
+            for col in range(const.FIELD_WIDTH):
+                if not self.has_3_vert(row, col, symbol):
+                    continue
+                if self.matrix[row - 3][col] == symbol:
+                    print(f"{game.active_player.name} {msgs.HAS_WON}")
+                    game.game_won = True
+                    return
+                if self.vert_4th_empty(row, col):
+                    game.mark_col_as_check_or_matchpnt(col, player1, symbol)
+
+    def has_3_vert(self, row, col, symbol):
+        return all(self.matrix[row - i][col] == symbol for i in range(3))
+
+    def vert_4th_empty(self, row, col):
+        return self.matrix[row - 3][col] == " "
+
+    def check_for_win_diagonal_nw_to_se(self, game, player1):
+        symbol = game.active_player.token_symbol
+        for row in range(const.FIELD_HEIGHT - 2):
+            for col in range(const.FIELD_WIDTH - 2):
+                enough_se_space_for_4 = (row < const.FIELD_HEIGHT - 3
+                                         and col < const.FIELD_WIDTH - 3)
+                if not self.has_3_diagonal_nw_to_se(row, col, symbol):
+                    continue
+                nw_4th_is_empty = self.matrix[row - 1][col - 1] == ' '
+                below_nw_4th_filled = self.matrix[row][col - 1] != ' '
+                if row > 0 and col > 0 and nw_4th_is_empty and below_nw_4th_filled:
+                    game.mark_col_as_check_or_matchpnt(col - 1, player1, symbol)
+                if not enough_se_space_for_4:
+                    continue
+                if self.matrix[row + 3][col + 3] == symbol:
+                    print(f"{game.active_player.name} {msgs.HAS_WON}")
+                    game.game_won = True
+                    return
+                se_4th_is_empty = self.matrix[row + 3][col + 3] == ' '
+                below_se_4th_filled = (row + 3 == const.BOTTOM_ROW
+                                       or self.matrix[row + 4][col + 3] != ' ')
+                if se_4th_is_empty and below_se_4th_filled:
+                    game.mark_col_as_check_or_matchpnt(col + 3, player1, symbol)
+
+    def has_3_diagonal_nw_to_se(self, row, col, symbol):
+        return all(self.matrix[row + i][col + i] == symbol for i in range(3))
+
+    def check_for_win_diagonal_sw_to_ne(self, game, player1):
+        symbol = game.active_player.token_symbol
+        for row in range(const.BOTTOM_ROW, const.THIRD_FROM_TOP, const.GO_UP):
+            for col in range(const.SECOND_FROM_RIGHT):
+                if not self.has_3_diagonal_sw_to_ne(row, col, symbol):
+                    continue
+                enough_ne_space_for_4th = col < 4 and row > 2 # Magic numbers.
+                if not enough_ne_space_for_4th:
+                    continue
+                ne_4th_is_symbol = self.matrix[row - 3][col + 3] == symbol
+                if ne_4th_is_symbol:
+                    print(f"{game.active_player.name} {msgs.HAS_WON}") 
+                    game.game_won = True
+                    return
+                ne_4th_is_empty = self.matrix[row - 3][col + 3] == " "
+                below_ne_4th_filled = self.matrix[row - 2][col + 3] != " "
+                if ne_4th_is_empty and below_ne_4th_filled:
+                    game.mark_col_as_check_or_matchpnt(col + 3, player1, symbol)
+                sw_cell_exists = row < const.BOTTOM_ROW and col > 0
+                if not sw_cell_exists:
+                    continue
+                sw_4th_is_empty = self.matrix[row + 1][col - 1] == " "
+                below_sw_4th_filled = (row == const.ROW_ABOVE_BOTTOM_ROW
+                                       or self.matrix[row + 2][col - 1] != " ")
+                if sw_4th_is_empty and below_sw_4th_filled:
+                    game.mark_col_as_check_or_matchpnt(col - 1, player1, symbol)
+
+    def has_3_diagonal_sw_to_ne(self, row, col, symbol):
+        return all(self.matrix[row - i][col + i] == symbol for i in range(3))
+
+    def check_for_win(self, game, player1):
+        self.check_for_win_hori(game, player1)
+        self.check_for_win_vert(game, player1)
+        self.check_for_win_diagonal_nw_to_se(game, player1)
+        self.check_for_win_diagonal_sw_to_ne(game, player1)
+
+    def check_for_win_vs_bot(self, game, player1):
+        game.reset_matchpnt_cols()
+        self.check_for_win(game, player1)
+        if not game.game_won:
+            return False
+        self.wipe_screen()
+        print(f"{game.active_player.name} {msgs.HAS_WON}")
+        return True
+
+    def wipe_screen(self):
+        os.system("cls" if os.name == "nt" else "clear")
+        self.print_board()
