@@ -7,7 +7,7 @@ class Player:
         self.name = name
         self.token_symbol = token_symbol
 
-    def get_col_from_player(self):
+    def get_col_from_player(self) -> int:
         print(self.name + messages.PROMPT_PLAYER_FOR_MOVE, end = "")
         user_input = input()
         if user_input == constants.KEY_TO_QUIT:
