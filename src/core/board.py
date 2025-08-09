@@ -1,9 +1,11 @@
+from core import game
 import core.messages as msgs
 import core.constants as const
 import os
 from core.constants import FIELD_HEIGHT as HEIGHT
 from core.constants import FIELD_WIDTH as WIDTH
 from enums.col_select import Col_Select
+from utils import random
 
 class Board:
     def __init__(self):
@@ -161,3 +163,13 @@ class Board:
     def wipe_screen(self):
         os.system("cls" if os.name == "nt" else "clear")
         self.print_board()
+
+    def is_col_full(self, game, col):
+        return False if game.tokens_in_cols[col] < const.FIELD_HEIGHT else True
+
+    def first_move_col(board):
+        if board.matrix[const.BOTTOM_ROW][const.MIDDLE_COL] == ' ':
+            return const.MIDDLE_COL
+        if random.coin_toss():
+            return const.MIDDLE_COL - 1
+        return const.MIDDLE_COL + 1
