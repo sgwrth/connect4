@@ -1,5 +1,6 @@
-from core import errors, messages
+from typing import Union
 import core.constants as const
+import output.print as prnt
 from core.player import Player
 from enums.game_mode import Game_Mode
 
@@ -18,63 +19,66 @@ class Game:
     def mark_col_as_check_or_matchpnt(self, col: int, player1: Player, symbol: str) -> None:
         if symbol == player1.token_symbol:
             self.check_cols.append(col)
-        else:
-            self.matchpnt_cols.append(col)
+            return
+        self.matchpnt_cols.append(col)
 
     def toggle_active_player(self, player1: Player, player2: Player) -> None:
         self.active_player = player1 if self.active_player == player2 else player2
 
     def reset_check_cols(self) -> None:
-        for i in range(len(self.check_cols) - 1, -1, -1):
-            self.check_cols.pop(i)
+        # for i in range(len(self.check_cols) - 1, -1, -1):
+        #     self.check_cols.pop(i)
+        [self.check_cols.pop(i) for i in range((len(self.check_cols) - 1), -1, -1)]
 
     def reset_matchpnt_cols(self) -> None:
-        for i in range(len(self.matchpnt_cols) - 1, -1, -1):
-            self.matchpnt_cols.pop(i)
+        # for i in range(len(self.matchpnt_cols) - 1, -1, -1):
+        #     self.matchpnt_cols.pop(i)
+        [self.matchpnt_cols.pop(i) for i in range((len(self.matchpnt_cols) - 1), -1, -1)]
 
 
     def is_tie(self) -> bool:
         if 1 > self.moves_left:
-            print(messages.TIE_GAME)
+            prnt.tie_game()
+            # print(messages.TIE_GAME)
             return True
-        else:
-            return False
+        return False
 
     @staticmethod
     def select_game_mode() -> int:
         game_mode = Game_Mode.NONE
         while True:
-            print(messages.CHOOSE_MODE, end = "")
+            prnt.choose_mode()
             try:
                 game_mode = int(input())
             except:
-                print(errors.ILLEGAL_INPUT)
+                # print(errors.ILLEGAL_INPUT)
+                prnt.illegal_input()
                 continue
             if game_mode == Game_Mode.VS_BOT or game_mode == Game_Mode.TWO_PLAYERS:
                 return game_mode
-            print(errors.ILLEGAL_INPUT)
+            # print(errors.ILLEGAL_INPUT)
+            prnt.illegal_input()
             
-    def check_cols_to_str(self) -> str | None:
-        if self.check_cols:
-            return " ".join(f"{col + 1}" for col in self.check_cols)
-        else:
-            return None
+    def check_cols_to_str(self) -> Union[str, None]:
+        # if self.check_cols:
+        #     return " ".join(f"{col + 1}" for col in self.check_cols)
+        # else:
+        #     return None
+        return " ".join(f"{col + 1}" for col in self.check_cols) if self.check_cols else None
 
-    def matchpnt_cols_to_str(self) -> str | None:
-        if self.matchpnt_cols:
-            return " ".join(f"{col + 1}" for col in self.matchpnt_cols)
-        else:
-            return None
+    def matchpnt_cols_to_str(self) -> Union[str, None]:
+        # if self.matchpnt_cols:
+        #     return " ".join(f"{col + 1}" for col in self.matchpnt_cols)
+        # else:
+        #     return None
+        return " ".join(f"{col + 1}" for col in self.matchpnt_cols) if self.matchpnt_cols else None
 
     def print_bots_turn_msg(self) -> None:
             if self.matchpnt_cols:
-                print(f"{messages.MATCHPNTS_IN} {self.matchpnt_cols_to_str()}")
-                print(f"{messages.WILL_IT_NOTICE}  {messages.PRESS_ENTER}")
+                prnt.will_bot_notice_matchpnts(self)
             if self.check_cols:
-                print(f"{messages.BOT_TURN}")
-                print(f"{messages.DANGER_IN} {self.check_cols_to_str()}")
-                print(f"{messages.WILL_IT_NOTICE}  {messages.PRESS_ENTER}")
+                prnt.will_bot_notice_danger(self)
             else:
-                print(f"{messages.BOT_TURN}  {messages.PRESS_ENTER}")
-            input()
+                prnt.bots_turn()
+            input() # A 'Press any key to continue' type situation.
 

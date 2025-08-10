@@ -1,9 +1,9 @@
-from core.game import Game
-import core.messages as msgs
-import core.constants as const
 import os
+import core.constants as const
+import output.print as prnt
 from core.constants import FIELD_HEIGHT as HEIGHT
 from core.constants import FIELD_WIDTH as WIDTH
+from core.game import Game
 from core.player import Player
 from enums.col_select import Col_Select
 from utils import random
@@ -13,8 +13,7 @@ class Board:
         self.matrix = [[" " for _ in range(WIDTH)] for _ in range(HEIGHT)]
 
     def print_board(self) -> None:
-        for row in self.matrix:
-            print("".join(f"[{cell}]" for cell in row))
+        [[print("".join(f"[{cell}]" for cell in row))] for row in self.matrix]
         self.print_footer()
 
     def print_footer(self) -> None:
@@ -34,7 +33,7 @@ class Board:
                     continue
                 right_4th_is_symbol = self.matrix[row][col + 3] == symbol
                 if right_4th_is_symbol:
-                    print(f"{game.active_player.name} {msgs.HAS_WON}")
+                    prnt.player_has_won(game)
                     game.game_won = True
                     return
                 if self.is_check_hori_right(row, col):
@@ -75,7 +74,7 @@ class Board:
                 if not self.has_3_vert(row, col, symbol):
                     continue
                 if self.matrix[row - 3][col] == symbol:
-                    print(f"{game.active_player.name} {msgs.HAS_WON}")
+                    prnt.player_has_won(game)
                     game.game_won = True
                     return
                 if self.vert_4th_empty(row, col):
@@ -91,25 +90,20 @@ class Board:
         symbol = game.active_player.token_symbol
         for row in range(const.FIELD_HEIGHT - 2):
             for col in range(const.FIELD_WIDTH - 2):
-
                 if not self.has_3_diagonal_nw_to_se(row, col, symbol):
                     continue
-
                 nw_4th_is_empty = self.matrix[row - 1][col - 1] == ' '
                 below_nw_4th_filled = self.matrix[row][col - 1] != ' '
                 if row > 0 and col > 0 and nw_4th_is_empty and below_nw_4th_filled:
                     game.mark_col_as_check_or_matchpnt(col - 1, player1, symbol)
-
                 enough_se_space_for_4 = (row < const.FIELD_HEIGHT - 3
                                          and col < const.FIELD_WIDTH - 3)
                 if not enough_se_space_for_4:
                     continue
-
                 if self.matrix[row + 3][col + 3] == symbol:
-                    print(f"{game.active_player.name} {msgs.HAS_WON}")
+                    prnt.player_has_won(game)
                     game.game_won = True
                     return
-
                 se_4th_is_empty = self.matrix[row + 3][col + 3] == ' '
                 below_se_4th_filled = (row + 3 == const.BOTTOM_ROW
                                        or self.matrix[row + 4][col + 3] != ' ')
@@ -123,29 +117,23 @@ class Board:
         symbol = game.active_player.token_symbol
         for row in range(const.BOTTOM_ROW, const.THIRD_FROM_TOP, const.GO_UP):
             for col in range(const.SECOND_FROM_RIGHT):
-
                 if not self.has_3_diagonal_sw_to_ne(row, col, symbol):
                     continue
-
                 enough_ne_space_for_4th = col < 4 and row > 2 # Magic numbers.
                 if not enough_ne_space_for_4th:
                     continue
-
                 ne_4th_is_symbol = self.matrix[row - 3][col + 3] == symbol
                 if ne_4th_is_symbol:
-                    print(f"{game.active_player.name} {msgs.HAS_WON}") 
+                    prnt.player_has_won(game)
                     game.game_won = True
                     return
-
                 ne_4th_is_empty = self.matrix[row - 3][col + 3] == " "
                 below_ne_4th_filled = self.matrix[row - 2][col + 3] != " "
                 if ne_4th_is_empty and below_ne_4th_filled:
                     game.mark_col_as_check_or_matchpnt(col + 3, player1, symbol)
-
                 sw_cell_exists = row < const.BOTTOM_ROW and col > 0
                 if not sw_cell_exists:
                     continue
-
                 sw_4th_is_empty = self.matrix[row + 1][col - 1] == " "
                 below_sw_4th_filled = (row == const.ROW_ABOVE_BOTTOM_ROW
                                        or self.matrix[row + 2][col - 1] != " ")
@@ -167,7 +155,7 @@ class Board:
         if not game.game_won:
             return False
         self.wipe_screen()
-        print(f"{game.active_player.name} {msgs.HAS_WON}")
+        prnt.player_has_won(game)
         return True
 
     def wipe_screen(self) -> None:
