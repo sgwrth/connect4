@@ -31,11 +31,13 @@ class Board:
                     game.mark_col_as_check_or_matchpnt(col - 1, player1, symbol)
                 if col >= const.FIELD_WIDTH - 3:
                     continue
+
                 right_4th_is_symbol = self.matrix[row][col + 3] == symbol
                 if right_4th_is_symbol:
                     prnt.player_has_won(game)
                     game.game_won = True
                     return
+
                 if self.is_check_hori_right(row, col):
                     game.mark_col_as_check_or_matchpnt(col + 3, player1, symbol)
 
@@ -49,10 +51,11 @@ class Board:
         return fourth_on_right_is_empty and below_4th_is_filled
 
     def is_check_hori_left(self, row: int, col: int) -> bool:
+        not_col_1 = col > 0
         fourth_on_left_is_empty = self.matrix[row][col - 1] == " "
         below_4th_is_filled = (row == const.BOTTOM_ROW
                                or self.matrix[row + 1][col - 1] != " ")
-        return fourth_on_left_is_empty and below_4th_is_filled
+        return not_col_1 and fourth_on_left_is_empty and below_4th_is_filled
 
     def place_token(self, col: int, game: Game) -> None:
         if col == Col_Select.QUIT_GAME:
@@ -92,23 +95,30 @@ class Board:
             for col in range(const.FIELD_WIDTH - 2):
                 if not self.has_3_diagonal_nw_to_se(row, col, symbol):
                     continue
-                nw_4th_is_empty = self.matrix[row - 1][col - 1] == ' '
-                below_nw_4th_filled = self.matrix[row][col - 1] != ' '
-                if row > 0 and col > 0 and nw_4th_is_empty and below_nw_4th_filled:
+                if self.nw_4th_is_empty_and_ready(row, col):
                     game.mark_col_as_check_or_matchpnt(col - 1, player1, symbol)
-                enough_se_space_for_4 = (row < const.FIELD_HEIGHT - 3
-                                         and col < const.FIELD_WIDTH - 3)
-                if not enough_se_space_for_4:
+                if not self.enough_se_space_for_4th(row, col):
                     continue
                 if self.matrix[row + 3][col + 3] == symbol:
                     prnt.player_has_won(game)
                     game.game_won = True
                     return
-                se_4th_is_empty = self.matrix[row + 3][col + 3] == ' '
-                below_se_4th_filled = (row + 3 == const.BOTTOM_ROW
-                                       or self.matrix[row + 4][col + 3] != ' ')
-                if se_4th_is_empty and below_se_4th_filled:
+                if self.se_4th_is_empty_and_ready(row, col):
                     game.mark_col_as_check_or_matchpnt(col + 3, player1, symbol)
+    
+    def nw_4th_is_empty_and_ready(self, row: int, col: int) -> bool:
+        nw_4th_is_empty = self.matrix[row - 1][col - 1] == ' '
+        below_nw_4th_filled = self.matrix[row][col - 1] != ' '
+        return row > 0 and col > 0 and nw_4th_is_empty and below_nw_4th_filled
+
+    def enough_se_space_for_4th(self, row: int, col: int) -> bool:
+        return row < const.FIELD_HEIGHT - 3 and col < const.FIELD_WIDTH - 3
+
+    def se_4th_is_empty_and_ready(self, row: int, col: int) -> bool:
+        se_4th_is_empty = self.matrix[row + 3][col + 3] == ' '
+        below_se_4th_filled = (row + 3 == const.BOTTOM_ROW
+                               or self.matrix[row + 4][col + 3] != ' ')
+        return se_4th_is_empty and below_se_4th_filled
 
     def has_3_diagonal_nw_to_se(self, row: int, col: int, symbol: str) -> bool:
         return all(self.matrix[row + i][col + i] == symbol for i in range(3))
@@ -119,39 +129,51 @@ class Board:
             for col in range(const.SECOND_FROM_RIGHT):
                 if not self.has_3_diagonal_sw_to_ne(row, col, symbol):
                     continue
-                enough_ne_space_for_4th = col < 4 and row > 2 # Magic numbers.
-                if not enough_ne_space_for_4th:
+                if not self.enough_ne_space_for_4th(row, col):
                     continue
-                ne_4th_is_symbol = self.matrix[row - 3][col + 3] == symbol
-                if ne_4th_is_symbol:
+                if self.ne_to_sw_win(row, col, symbol):
                     prnt.player_has_won(game)
                     game.game_won = True
                     return
-                ne_4th_is_empty = self.matrix[row - 3][col + 3] == " "
-                below_ne_4th_filled = self.matrix[row - 2][col + 3] != " "
-                if ne_4th_is_empty and below_ne_4th_filled:
+                if self.ne_4th_empty_and_ready(row, col):
                     game.mark_col_as_check_or_matchpnt(col + 3, player1, symbol)
-                sw_cell_exists = row < const.BOTTOM_ROW and col > 0
-                if not sw_cell_exists:
+                if not self.sw_cell_exists(row, col):
                     continue
-                sw_4th_is_empty = self.matrix[row + 1][col - 1] == " "
-                below_sw_4th_filled = (row == const.ROW_ABOVE_BOTTOM_ROW
-                                       or self.matrix[row + 2][col - 1] != " ")
-                if sw_4th_is_empty and below_sw_4th_filled:
+                if self.sw_4th_empty_and_ready(row, col):
                     game.mark_col_as_check_or_matchpnt(col - 1, player1, symbol)
+
+    def enough_ne_space_for_4th(self, row: int, col: int) -> bool:
+        return col < 4 and row > 2 # Magic numbers.
+
+    def ne_to_sw_win(self, row, col, symbol: str) -> None:
+        return self.matrix[row - 3][col + 3] == symbol
+
+    def ne_4th_empty_and_ready(self, row: int, col: int) -> bool:
+        ne_4th_is_empty = self.matrix[row - 3][col + 3] == " "
+        below_ne_4th_filled = self.matrix[row - 2][col + 3] != " "
+        return ne_4th_is_empty and below_ne_4th_filled
+
+    def sw_cell_exists(self, row: int, col: int) -> bool:
+        return row < const.BOTTOM_ROW and col > 0
+
+    def sw_4th_empty_and_ready(self, row: int, col: int) -> bool:
+        sw_4th_is_empty = self.matrix[row + 1][col - 1] == " "
+        below_sw_4th_filled = (row == const.ROW_ABOVE_BOTTOM_ROW
+                               or self.matrix[row + 2][col - 1] != " ")
+        return sw_4th_is_empty and below_sw_4th_filled
 
     def has_3_diagonal_sw_to_ne(self, row: int, col: int, symbol: str) -> bool:
         return all(self.matrix[row - i][col + i] == symbol for i in range(3))
 
-    def check_for_win(self, game: Game, player1: Player) -> None:
-        self.check_for_win_hori(game, player1)
-        self.check_for_win_vert(game, player1)
-        self.check_for_win_diagonal_nw_to_se(game, player1)
-        self.check_for_win_diagonal_sw_to_ne(game, player1)
+    def check_for_win(self, game: Game, player: Player) -> None:
+        self.check_for_win_hori(game, player)
+        self.check_for_win_vert(game, player)
+        self.check_for_win_diagonal_nw_to_se(game, player)
+        self.check_for_win_diagonal_sw_to_ne(game, player)
 
-    def check_for_win_vs_bot(self, game: Game, player1: Player) -> bool:
+    def check_for_win_vs_bot(self, game: Game, player: Player) -> bool:
         game.reset_matchpnt_cols()
-        self.check_for_win(game, player1)
+        self.check_for_win(game, player)
         if not game.game_won:
             return False
         self.wipe_screen()

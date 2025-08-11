@@ -51,7 +51,7 @@ if Game_Mode.VS_BOT == game_mode:
         game.print_bots_turn_msg()
         turns.bot_make_move(game, board)
         board.print_board()
-        if board.is_win_or_tie(game, player1):
+        if board.is_win_or_tie(game, player2):
             break
         game.toggle_active_player(player1, player2)
     prnt.thanks_for_playing()
