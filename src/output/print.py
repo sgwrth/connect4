@@ -22,7 +22,7 @@ def thanks_for_playing() -> None:
 
 def play_vs_bot():
     print(f"{msgs.PLAY_VS_BOT}")
-    input() # A 'Press any key to continue' type situation.
+    # input() # A 'Press any key to continue' type situation.
 
 def player_has_won(game: Game) -> None:
     print(f"{game.active_player.name} {msgs.HAS_WON}")

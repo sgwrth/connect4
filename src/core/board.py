@@ -105,7 +105,7 @@ class Board:
                     return
                 if self.se_4th_is_empty_and_ready(row, col):
                     game.mark_col_as_check_or_matchpnt(col + 3, player1, symbol)
-    
+
     def nw_4th_is_empty_and_ready(self, row: int, col: int) -> bool:
         nw_4th_is_empty = self.matrix[row - 1][col - 1] == ' '
         below_nw_4th_filled = self.matrix[row][col - 1] != ' '

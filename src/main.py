@@ -37,20 +37,20 @@ if Game_Mode.VS_BOT == game_mode:
     random.seed()
     player2 = Player(bot.BOT_NAME, const.PLAYER_2_SYMBOL)
     prnt.play_vs_bot()
+    input()
     game = Game(player1, game_mode)
     while True:
         board.wipe_screen()
         board.place_token(turns.prompt_player_for_move(game, board), game)
         if game.quit:
             break
-        board.print_board()
         if board.is_win_or_tie(game, player1):
             break
         game.toggle_active_player(player1, player2)
         board.wipe_screen()
         game.print_bots_turn_msg()
+        input()
         turns.bot_make_move(game, board)
-        board.print_board()
         if board.is_win_or_tie(game, player2):
             break
         game.toggle_active_player(player1, player2)
