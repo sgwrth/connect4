@@ -1,20 +1,45 @@
+import asyncio
 import core.bot as bot
 import core.constants as const
 import core.messages as messages
 import core.turns as turns
 import output.print as prnt
+import json
 import random
 from core import turns
 from core.board import Board
 from core.game import Game
 from core.player import Player
 from enums.game_mode import Game_Mode
+from websockets.asyncio.server import serve
 
-board = Board()
+async def hello(websocket):
+
+    board = Board()
+    player_name = await websocket.recv()
+    player1 = Player(player_name, const.PLAYER_1_SYMBOL)
+    game = Game(player1, Game_Mode.VS_BOT)
+
+    while True:
+        col_str = await websocket.recv()
+        col = int(col_str)
+        board.place_token(col, game)
+        board_json = json.dumps(board.matrix)
+        await websocket.send(board_json)
+
+async def main():
+    async with serve(hello, "0.0.0.0", 8765) as server:
+        await server.serve_forever()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+"""
+
 board.wipe_screen()
 prnt.welcome()
 prnt.prompt_player1_for_name()
-player1 = Player(input(), const.PLAYER_1_SYMBOL)
+
 prnt.wish_luck(player1)
 game_mode = Game.select_game_mode()
 
@@ -55,3 +80,4 @@ if Game_Mode.VS_BOT == game_mode:
             break
         game.toggle_active_player(player1, player2)
     prnt.thanks_for_playing()
+"""
