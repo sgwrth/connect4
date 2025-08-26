@@ -15,17 +15,32 @@ from websockets.asyncio.server import serve
 
 async def hello(websocket):
 
+    response = {
+        'data': None,
+        'message': 'Please enter your name'
+    }
+    await websocket.send(json.dumps(response))
     board = Board()
     player_name = await websocket.recv()
     player1 = Player(player_name, const.PLAYER_1_SYMBOL)
     game = Game(player1, Game_Mode.VS_BOT)
+    response['message'] = 'Please place your token'
+    response['data'] = board.matrix
+    await websocket.send(json.dumps(response))
 
     while True:
         col_str = await websocket.recv()
-        col = int(col_str)
+        col = int(col_str) - 1
         board.place_token(col, game)
-        board_json = json.dumps(board.matrix)
-        await websocket.send(board_json)
+        if board.is_win_or_tie(game, player1):
+            message = 'You have won!'
+        else:
+            message = 'Please place your token'
+        response = {
+                'data': board.matrix,
+                'message': message
+        }
+        await websocket.send(json.dumps(response))
 
 async def main():
     async with serve(hello, "0.0.0.0", 8765) as server:
