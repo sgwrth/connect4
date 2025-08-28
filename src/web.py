@@ -6,6 +6,7 @@ import core.turns as turns
 import output.print as prnt
 import json
 import random
+import time
 from core import turns
 from core.board import Board
 from core.game import Game
@@ -14,14 +15,10 @@ from enums.game_mode import Game_Mode
 from websockets.asyncio.server import serve
 
 async def hello(websocket):
-
-    response = {
-        "data": None,
-        "message": "Please enter your name"
-    }
+    response = {"data": None, "message": "Please enter your name"}
     await websocket.send(json.dumps(response))
-    board = Board()
     player_name = await websocket.recv()
+    board = Board()
     player1 = Player(player_name, const.PLAYER_1_SYMBOL)
     player2 = Player(bot.BOT_NAME, const.PLAYER_2_SYMBOL)
     random.seed()
@@ -37,13 +34,13 @@ async def hello(websocket):
         if board.is_win_or_tie(game, player1):
             message = "You have won!" if game.game_won else "It's a tie!"
         else:
-            message = f"Please place your token, {player_name}"
-        response = {
-                "data": board.matrix,
-                "message": message
-        }
+            message = f"It's Bot's turn now.  Waiting..."
+        response = {"data": board.matrix, "message": message}
 
-        # Bot makes its move.
+        await websocket.send(json.dumps(response))
+
+        time.sleep(2)
+
         game.toggle_active_player(player1, player2)
         turns.bot_make_move(game, board)
         if board.is_win_or_tie(game, player2):
@@ -51,10 +48,7 @@ async def hello(websocket):
         else:
             message = "Please place your token"
         game.toggle_active_player(player1, player2)
-        response = {
-                "data": board.matrix,
-                "message": message
-        }
+        response = {"data": board.matrix, "message": message}
         await websocket.send(json.dumps(response))
         if game.game_won:
             break
@@ -65,51 +59,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-"""
-
-board.wipe_screen()
-prnt.welcome()
-prnt.prompt_player1_for_name()
-
-prnt.wish_luck(player1)
-game_mode = Game.select_game_mode()
-
-if Game_Mode.TWO_PLAYERS == game_mode:
-    prnt.prompt_player2_for_name()
-    player2 = Player(input(), const.PLAYER_2_SYMBOL)
-    prnt.wish_luck(player2)
-    game = Game(player1, game_mode)
-    while True != game.game_won:
-        board.wipe_screen()
-        board.place_token(turns.prompt_player_for_move(game, board), game)
-        board.print_board()
-        board.check_for_win(game, player1)
-        if game.is_tie():
-            break
-        game.toggle_active_player(player1, player2)
-    prnt.thanks_for_playing()
-
-if Game_Mode.VS_BOT == game_mode:
-    random.seed()
-    player2 = Player(bot.BOT_NAME, const.PLAYER_2_SYMBOL)
-    prnt.play_vs_bot()
-    input()
-    game = Game(player1, game_mode)
-    while True:
-        board.wipe_screen()
-        board.place_token(turns.prompt_player_for_move(game, board), game)
-        if game.quit:
-            break
-        if board.is_win_or_tie(game, player1):
-            break
-        game.toggle_active_player(player1, player2)
-        board.wipe_screen()
-        game.print_bots_turn_msg()
-        input()
-        turns.bot_make_move(game, board)
-        if board.is_win_or_tie(game, player2):
-            break
-        game.toggle_active_player(player1, player2)
-    prnt.thanks_for_playing()
-"""
