@@ -9,8 +9,11 @@ from enums.col_select import Col_Select
 from utils import random
 
 class Board:
-    def __init__(self):
-        self.matrix = [[" " for _ in range(WIDTH)] for _ in range(HEIGHT)]
+    def __init__(self, matrix=None):
+        if not matrix:
+            self.matrix = [[" " for _ in range(WIDTH)] for _ in range(HEIGHT)]
+        else:
+            self.matrix = matrix
 
     def print_board(self) -> None:
         [[print("".join(f"[{cell}]" for cell in row))] for row in self.matrix]

@@ -5,6 +5,7 @@ from core.player import Player
 from enums.game_mode import Game_Mode
 
 class Game:
+    """
     def __init__(self, active_player: Player, game_mode: int):
         self.active_player = active_player
         self.game_mode = game_mode
@@ -15,6 +16,29 @@ class Game:
         self.tokens_in_cols = [0, 0, 0, 0, 0, 0 ,0]
         self.moves_left = const.MAX_MOVES
         self.quit = False
+    """
+
+    def __init__(self, active_player=None, game_mode=None, request_json=None):
+        if request_json:
+            self.active_player = request_json["active_player"]
+            self.game_mode = request_json["game_mode"]
+            self.game_won = request_json["game_won"]
+            self.first_move = request_json["first_move"]
+            self.check_cols = request_json["check_cols"]
+            self.matchpnt_cols = request_json["matchpnt_cols"]
+            self.tokens_in_cols = request_json["tokens_in_cols"]
+            self.moves_left = request_json["moves_left"]
+            self.quit = request_json["quit"]
+        else:
+            self.active_player = active_player
+            self.game_mode = game_mode
+            self.game_won = False
+            self.first_move = True
+            self.check_cols = []
+            self.matchpnt_cols = []
+            self.tokens_in_cols = [0, 0, 0, 0, 0, 0 ,0]
+            self.moves_left = const.MAX_MOVES
+            self.quit = False
 
     def mark_col_as_check_or_matchpnt(self, col: int, player1: Player, symbol: str) -> None:
         if symbol == player1.token_symbol:
