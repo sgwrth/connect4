@@ -198,4 +198,6 @@ class Board:
         return const.MIDDLE_COL + 1
 
     def is_win_or_tie(self, game: Game, player1: Player) -> bool:
-        return True if self.check_for_win_vs_bot(game, player1) or game.is_tie() else False
+        return (True 
+                if self.check_for_win_vs_bot(game, player1) or game.is_tie()
+                else False)

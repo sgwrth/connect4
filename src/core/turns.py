@@ -37,3 +37,4 @@ def bot_make_move(game, board: Board) -> None:
         game.first_move = False
     else:
         board.place_token(select_col_for_bot(game, board), game)
+

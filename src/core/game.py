@@ -20,8 +20,8 @@ class Game:
 
     def __init__(self, active_player=None, game_mode=None, request_json=None):
         if request_json:
-            self.active_player = request_json["active_player"]
-            self.game_mode = request_json["game_mode"]
+            self.active_player = active_player
+            self.game_mode = Game_Mode.VS_BOT if "vs_bot" else None
             self.game_won = request_json["game_won"]
             self.first_move = request_json["first_move"]
             self.check_cols = request_json["check_cols"]
