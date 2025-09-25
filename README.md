@@ -4,6 +4,11 @@ Has two modes:
   - vs. CPU
   - two players
 
+Can be played three ways (vs. CPU only):
+  - in the terminal
+  - via HTTP request
+  - using web sockets
+
 Planned features:
   - improved CPU opponent AI
   - GUI version
